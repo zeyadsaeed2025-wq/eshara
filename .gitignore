@@ -41,3 +41,5 @@ media/videos/*.mov
 # Environment
 .env.local
 .env.*.local
+
+.vercel
