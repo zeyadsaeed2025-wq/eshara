@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <title>SMART TRANSLATION</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #e6f2ff;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            background-color: #38bdf8;
+            color: white;
+            transition: 0.3s;
+        }
+
+        button:hover {
+            background-color: #0ea5e9;
+        }
+
+        textarea {
+            width: 80%;
+            font-size: 16px;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            resize: none;
+        }
+
+        /* شريط الفيديوهات أفقي */
+        #signArea {
+            margin-top: 25px;
+            min-height: 200px;
+            background: #020617;
+            border: 2px dashed #38bdf8;
+            border-radius: 15px;
+            padding: 15px;
+
+            display: flex;              /* أفقي */
+            flex-direction: row;
+            justify-content: flex-start;
+            align-items: center;
+            overflow-x: auto;           /* تمرير أفقي */
+            gap: 5px;
+        }
+
+        #signArea video {
+            width: 100px;
+            height: auto;
+            border-radius: 10px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+    </style>
+</head>
+<body>
+
+<h1>🎤 SMART TRANSLATION</h1>
+
+<!-- أزرار التحكم -->
+<button onclick="start()">ابدأ التسجيل</button>
+<button onclick="replay()">إعادة عرض آخر كلمة</button>
+<button onclick="stop()">إيقاف التسجيل</button>
+
+<!-- مربع النص -->
+<textarea id="text" rows="2" cols="40" placeholder="الكلمة المسموعة ستظهر هنا"></textarea>
+
+<!-- مكان عرض فيديوهات لغة الإشارة -->
+<div id="signArea"></div>
+
+<script>
+    // 🔹 قاموس الحروف والكلمات بالفيديوهات
+    const letterVideos = {
+        "ا": "sgin_letters/ا.mp4",
+        "ب": "sgin_letters/ب.mp4",
+        "ت": "sgin_letters/ت.mp4",
+        "ث": "sgin_letters/ث.mp4",
+        "ج": "sgin_letters/ج.mp4",
+        "ح": "sgin_letters/ح.mp4",
+        "خ": "sgin_letters/خ.mp4",
+        "د": "sgin_letters/د.mp4",
+        "ذ": "sgin_letters/ذ.mp4",
+        "ر": "sgin_letters/ر.mp4",
+        "ز": "sgin_letters/ز.mp4",
+        "س": "sgin_letters/س.mp4",
+        "ش": "sgin_letters/ش.mp4",
+        "ص": "sgin_letters/ص.mp4",
+        "ض": "sgin_letters/ض.mp4",
+        "ط": "sgin_letters/ط.mp4",
+        "ظ": "sgin_letters/ظ.mp4",
+        "ع": "sgin_letters/ع.mp4",
+        "غ": "sgin_letters/غ.mp4",
+        "ف": "sgin_letters/ف.mp4",
+        "ق": "sgin_letters/ق.mp4",
+        "ك": "sgin_letters/ك.mp4",
+        "ل": "sgin_letters/ل.mp4",
+        "م": "sgin_letters/م.mp4",
+        "ن": "sgin_letters/ن.mp4",
+        "ه": "sgin_letters/ه.mp4",
+        "و": "sgin_letters/و.mp4",
+        "ي": "sgin_letters/ي.mp4",
+        // كلمات وجمل جاهزة
+        "انت مش عاجبني": "sgin_letters/انت مش عجابني.mp4",
+        "خالي بالك": "sgin_letters/خالي بالك.mp4",
+        "مساء الخير": "sgin_letters/مساء الخير.mp4",
+        "عامل ايه": "sgin_letters/عامل ايه.mp4",
+        "انت كويس": "sgin_letters/انت كويس.mp4",
+        "صباح الخير": "sgin_letters/صباح الخير.mp4",
+        "انت جعان": "sgin_letters/انت جعان.mp4",
+        "استنى": "sgin_letters/استنى.mp4",
+        "خلصت المدرسه": "sgin_letters/خلصت المدرسه.mp4",
+        "انت متزوج": "sgin_letters/انت متزوج.mp4"
+    };
+
+    let lastText = ""; // لتخزين آخر كلمة أو جملة
+
+    // 🔹 دالة عرض الفيديوهات في شريط أفقي
+    function showSigns(text) {
+        lastText = text; // حفظ الكلمة
+        let area = document.getElementById("signArea");
+        area.innerHTML = ""; // مسح القديم
+
+        // لو الكلمة أو الجملة موجودة كاملة في القاموس (كلمة جاهزة)
+        if (letterVideos[text]) {
+            let video = document.createElement("video");
+            video.src = letterVideos[text];
+            video.autoplay = true;
+            video.muted = true;
+            video.playsInline = true;
+            video.width = 160;
+            area.appendChild(video);
+            return;
+        }
+
+        // تحويل النص لحروف فردية
+        let chars = text.replace(/\s+/g, '').split('');
+        chars.forEach(ch => {
+            if (letterVideos[ch]) {
+                let video = document.createElement("video");
+                video.src = letterVideos[ch];
+                video.autoplay = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.width = 100;
+                area.appendChild(video);
+            }
+        });
+    }
+
+    // 🔹 دالة إعادة عرض آخر كلمة
+    function replay() {
+        if (lastText) {
+            showSigns(lastText);
+        }
+    }
+
+    // 🔹 تشغيل الميكروفون وتحويل الصوت لنص
+    let recognition;
+    function start() {
+        recognition = new webkitSpeechRecognition();
+        recognition.lang = "ar-EG";
+        recognition.continuous = true;
+
+        recognition.onresult = function(event) {
+            let text = event.results[event.results.length - 1][0].transcript;
+            document.getElementById("text").value = text;
+            showSigns(text);
+        };
+
+        recognition.start();
+    }
+</script>
+
+</body>
+</html>

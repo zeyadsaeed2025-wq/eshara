@@ -1,0 +1,40 @@
+# Real-Time Sign Language Translator - Backend
+# FastAPI Backend with MongoDB
+
+# Web Framework
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Database
+motor==3.3.2
+pymongo==4.6.1
+
+# Data Validation
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# AI/ML (Optional - for Whisper integration)
+# openai-whisper==20231117
+
+# File handling
+python-magic==0.4.27
+
+# CORS & Compression
+# Already included in fastapi
+
+# Logging & Monitoring
+python-json-logger==2.0.7
+
+# Environment variables
+python-dotenv==1.0.0
+
+# Testing
+pytest==7.4.4
+pytest-asyncio==0.23.3
+httpx==0.26.0
+
+# Development
+black==23.12.1
+isort==5.13.2
+flake8==7.0.0

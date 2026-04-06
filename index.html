@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI مترجم لغة الإشارة - AI Sign Language Translator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Cairo', sans-serif; }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 50%, #1e1b4b 100%);
+        }
+        
+        .sign-video {
+            width: 120px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 12px;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        
+        .sign-video-large {
+            width: 200px;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 16px;
+            border: 3px solid #38bdf8;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.8); }
+        }
+        
+        .recording-pulse {
+            animation: pulse-glow 1.5s infinite;
+        }
+        
+        .scroll-signs {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 16px;
+            min-height: 160px;
+            scroll-behavior: smooth;
+        }
+        
+        .scroll-signs::-webkit-scrollbar {
+            height: 8px;
+        }
+        
+        .scroll-signs::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        
+        .scroll-signs::-webkit-scrollbar-thumb {
+            background: #38bdf8;
+            border-radius: 4px;
+        }
+        
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+            transform: scaleX(-1);
+        }
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 12px;
+            transform: scaleX(-1);
+        }
+        
+        .camera-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background: #0f172a;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <div id="app" class="container mx-auto px-4 py-8 max-w-6xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                🤟 AI مترجم لغة الإشارة
+            </h1>
+            <p class="text-gray-400">Arabic Sign Language Translator</p>
+        </header>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Left Column: Speech to Sign -->
+            <div class="space-y-6">
+                <!-- Speech Input Section -->
+                <div class="glass rounded-2xl p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span class="text-2xl">🎤</span> إدخال الكلام
+                        <span class="text-sm text-gray-400">(Speech Input)</span>
+                    </h2>
+                    
+                    <div class="flex gap-3 mb-4">
+                        <button id="startSpeech" 
+                            class="flex-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 px-6 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2">
+                            <span>🎙️</span> ابدأ التسجيل
+                        </button>
+                        <button id="stopSpeech" 
+                            class="flex-1 bg-gray-600 hover:bg-gray-500 px-6 py-3 rounded-xl font-semibold transition-all flex items-center justify-center gap-2" disabled>
+                            <span>⏹️</span> إيقاف
+                        </button>
+                    </div>
+                    
+                    <textarea id="speechInput" 
+                        class="w-full bg-slate-800/50 border border-slate-600 rounded-xl p-4 text-lg resize-none focus:border-cyan-500 focus:outline-none"
+                        rows="2" placeholder="الكلام المسموع سيظهر هنا..."></textarea>
+                </div>
+
+                <!-- Text Input Section -->
+                <div class="glass rounded-2xl p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span class="text-2xl">📝</span> إدخال النص
+                        <span class="text-sm text-gray-400">(Text Input)</span>
+                    </h2>
+                    
+                    <div class="flex gap-3">
+                        <input id="textInput" type="text" 
+                            class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl p-4 text-lg focus:border-cyan-500 focus:outline-none"
+                            placeholder="اكتب النص هنا...">
+                        <button id="convertToSign" 
+                            class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 px-6 py-3 rounded-xl font-semibold transition-all">
+                            ▶️ تحويل
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Sign Display Section -->
+                <div class="glass rounded-2xl p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span class="text-2xl">🤟</span> عرض لغة الإشارة
+                        <span class="text-sm text-gray-400">(Sign Display)</span>
+                    </h2>
+                    
+                    <div id="signDisplay" class="scroll-signs bg-slate-900/50 rounded-xl min-h-[160px] items-center">
+                        <p class="text-gray-500 text-center w-full">سيتم عرض فيديوهات لغة الإشارة هنا</p>
+                    </div>
+                    
+                    <div class="flex gap-3 mt-4">
+                        <button id="replaySign" class="flex-1 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg transition-all">
+                            🔄 إعادة العرض
+                        </button>
+                        <button id="clearSigns" class="flex-1 bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg transition-all">
+                            🗑️ مسح
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Sign to Text -->
+            <div class="space-y-6">
+                <!-- Camera Section -->
+                <div class="glass rounded-2xl p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span class="text-2xl">📷</span> كاميرا إشارة اليد
+                        <span class="text-sm text-gray-400">(Hand Sign Camera)</span>
+                    </h2>
+                    
+                    <div class="camera-container mb-4">
+                        <video id="webcam" autoplay playsinline></video>
+                        <canvas id="canvas"></canvas>
+                    </div>
+                    
+                    <div class="flex gap-3 mb-4">
+                        <button id="startCamera" 
+                            class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 px-6 py-3 rounded-xl font-semibold transition-all">
+                            📷 تشغيل الكاميرا
+                        </button>
+                        <button id="stopCamera" 
+                            class="flex-1 bg-gray-600 hover:bg-gray-500 px-6 py-3 rounded-xl font-semibold transition-all" disabled>
+                            ⏹️ إيقاف
+                        </button>
+                    </div>
+                    
+                    <div id="cameraStatus" class="text-center text-sm text-gray-400 mb-4">
+                        الكاميرا متوقفة
+                    </div>
+                </div>
+
+                <!-- Detected Signs -->
+                <div class="glass rounded-2xl p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span class="text-2xl">📋</span> النص المكتشف
+                        <span class="text-sm text-gray-400">(Detected Text)</span>
+                    </h2>
+                    
+                    <div id="detectedSigns" class="bg-slate-900/50 rounded-xl p-4 min-h-[80px] mb-4">
+                        <p class="text-gray-500 text-center">قم بإظهار إشارة اليد أمام الكاميرا</p>
+                    </div>
+                    
+                    <div class="flex gap-3">
+                        <button id="speakDetected" 
+                            class="flex-1 bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-400 hover:to-red-500 px-6 py-3 rounded-xl font-semibold transition-all" disabled>
+                            🔊 نطق النص
+                        </button>
+                        <button id="clearDetected" class="flex-1 bg-slate-700 hover:bg-slate-600 px-6 py-3 rounded-xl font-semibold transition-all">
+                            🗑️ مسح
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Text to Speech -->
+                <div class="glass rounded-2xl p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span class="text-2xl">🔊</span> تحويل النص لكلام
+                        <span class="text-sm text-gray-400">(Text to Speech)</span>
+                    </h2>
+                    
+                    <textarea id="ttsInput" 
+                        class="w-full bg-slate-800/50 border border-slate-600 rounded-xl p-4 text-lg resize-none focus:border-cyan-500 focus:outline-none mb-4"
+                        rows="2" placeholder="اكتب النص المراد نطقه..."></textarea>
+                    
+                    <div class="flex gap-3">
+                        <button id="speak" 
+                            class="flex-1 bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-400 hover:to-orange-500 px-6 py-3 rounded-xl font-semibold transition-all">
+                            🔊 نطق
+                        </button>
+                        <button id="stopSpeak" 
+                            class="flex-1 bg-gray-600 hover:bg-gray-500 px-6 py-3 rounded-xl font-semibold transition-all">
+                            ⏹️ إيقاف
+                        </button>
+                    </div>
+                    
+                    <!-- Voice Selection -->
+                    <div class="mt-4">
+                        <label class="block text-sm text-gray-400 mb-2">اختر الصوت:</label>
+                        <select id="voiceSelect" 
+                            class="w-full bg-slate-800/50 border border-slate-600 rounded-xl p-3 focus:border-cyan-500 focus:outline-none">
+                            <option value="">اختر الصوت...</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-8 text-gray-500 text-sm">
+            <p>AI Sign Language Translator - Phase 1 MVP</p>
+            <p class="mt-1">يدعم العربية (Arabic Sign Language)</p>
+        </footer>
+    </div>
+
+    <!-- MediaPipe Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+    <script>
+        // ==================== SIGN DICTIONARY ====================
+        const signDictionary = {
+            // Arabic Letters
+            "ا": "sgin_letters/ا.mp4",
+            "ب": "sgin_letters/ب.mp4",
+            "ت": "sgin_letters/ت.mp4",
+            "ث": "sgin_letters/ث.mp4",
+            "ج": "sgin_letters/ج.mp4",
+            "ح": "sgin_letters/ح.mp4",
+            "خ": "sgin_letters/خ.mp4",
+            "د": "sgin_letters/د.mp4",
+            "ذ": "sgin_letters/ذ.mp4",
+            "ر": "sgin_letters/ر.mp4",
+            "ز": "sgin_letters/ز.mp4",
+            "س": "sgin_letters/س.mp4",
+            "ش": "sgin_letters/ش.mp4",
+            "ص": "sgin_letters/ص.mp4",
+            "ض": "sgin_letters/ض.mp4",
+            "ط": "sgin_letters/ط.mp4",
+            "ظ": "sgin_letters/ظ.mp4",
+            "ع": "sgin_letters/ع.mp4",
+            "غ": "sgin_letters/غ.mp4",
+            "ف": "sgin_letters/ف.mp4",
+            "ق": "sgin_letters/ق.mp4",
+            "ك": "sgin_letters/ك.mp4",
+            "ل": "sgin_letters/ل.mp4",
+            "م": "sgin_letters/م.mp4",
+            "ن": "sgin_letters/ن.mp4",
+            "ه": "sgin_letters/ه.mp4",
+            "و": "sgin_letters/و.mp4",
+            "ي": "sgin_letters/ي.mp4",
+            "ى": "sgin_letters/ى.mp4",
+            "ء": "sgin_letters/ء.mp4",
+            "آ": "sgin_letters/آ.mp4",
+            "أ": "sgin_letters/أ.mp4",
+            "إ": "sgin_letters/إ.mp4",
+            "ؤ": "sgin_letters/ؤ.mp4",
+            "ئ": "sgin_letters/ئ.mp4",
+            "لا": "sgin_letters/لا.mp4",
+            "ال": "sgin_letters/ال.mp4",
+            
+            // Common Phrases
+            "صباح الخير": "sgin_letters/صباح الخير.mp4",
+            "مساء الخير": "sgin_letters/مساء الخير.mp4",
+            "عامل ايه": "sgin_letters/عامل ايه.mp4",
+            "انت كويس": "sgin_letters/انت كويس.mp4",
+            "انت جعان": "sgin_letters/انت جعان.mp4",
+            "انت متزوج": "sgin_letters/انت متزوج.mp4",
+            "انت مش عاجبني": "sgin_letters/انت مش عجابني.mp4",
+            "خالي بالك": "sgin_letters/خالي بالك.mp4",
+            "استنى": "sgin_letters/استنى.mp4",
+            "خلصت المدرسه": "sgin_letters/خلصت المدرسه.mp4"
+        };
+
+        // ==================== STATE ====================
+        let lastSpokenText = "";
+        let lastDetectedText = "";
+        let recognition = null;
+        let cameraStream = null;
+        let hands = null;
+        let camera = null;
+        let isDetecting = false;
+        let handPositionHistory = [];
+        const DETECTION_THRESHOLD = 15;
+
+        // ==================== SPEECH TO TEXT ====================
+        const startSpeechBtn = document.getElementById('startSpeech');
+        const stopSpeechBtn = document.getElementById('stopSpeech');
+        const speechInput = document.getElementById('speechInput');
+
+        function initSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('المتصفح لا يدعم التعرف على الكلام. يرجى استخدام Chrome.');
+                return null;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognizer = new SpeechRecognition();
+            recognizer.lang = 'ar-EG';
+            recognizer.continuous = true;
+            recognizer.interimResults = true;
+
+            recognizer.onstart = () => {
+                startSpeechBtn.disabled = true;
+                stopSpeechBtn.disabled = false;
+                startSpeechBtn.classList.add('recording-pulse');
+            };
+
+            recognizer.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                speechInput.value = transcript;
+                if (event.results[event.results.length - 1].isFinal) {
+                    convertTextToSign(transcript);
+                }
+            };
+
+            recognizer.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+            };
+
+            recognizer.onend = () => {
+                startSpeechBtn.disabled = false;
+                stopSpeechBtn.disabled = true;
+                startSpeechBtn.classList.remove('recording-pulse');
+            };
+
+            return recognizer;
+        }
+
+        startSpeechBtn.addEventListener('click', () => {
+            if (!recognition) {
+                recognition = initSpeechRecognition();
+            }
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.log('Already started');
+                }
+            }
+        });
+
+        stopSpeechBtn.addEventListener('click', () => {
+            if (recognition) {
+                recognition.stop();
+            }
+        });
+
+        // ==================== TEXT TO SIGN ====================
+        const textInput = document.getElementById('textInput');
+        const convertToSignBtn = document.getElementById('convertToSign');
+        const signDisplay = document.getElementById('signDisplay');
+        const replaySignBtn = document.getElementById('replaySign');
+        const clearSignsBtn = document.getElementById('clearSigns');
+
+        function convertTextToSign(text) {
+            lastSpokenText = text;
+            displaySigns(text);
+        }
+
+        function displaySigns(text) {
+            signDisplay.innerHTML = '';
+            
+            const normalizedText = text.trim().toLowerCase();
+            
+            // Check for complete phrase first
+            if (signDictionary[normalizedText]) {
+                const video = document.createElement('video');
+                video.src = signDictionary[normalizedText];
+                video.autoplay = true;
+                video.muted = true;
+                video.playsInline = true;
+                video.className = 'sign-video-large';
+                signDisplay.appendChild(video);
+                return;
+            }
+
+            // Check for each word in the phrase
+            const words = normalizedText.split(' ');
+            for (const word of words) {
+                if (signDictionary[word]) {
+                    const video = document.createElement('video');
+                    video.src = signDictionary[word];
+                    video.autoplay = true;
+                    video.muted = true;
+                    video.playsInline = true;
+                    video.className = 'sign-video';
+                    signDisplay.appendChild(video);
+                } else {
+                    // Fall back to letters
+                    const letters = word.replace(/[^\u0600-\u06FF]/g, '').split('');
+                    letters.forEach(letter => {
+                        if (signDictionary[letter]) {
+                            const video = document.createElement('video');
+                            video.src = signDictionary[letter];
+                            video.autoplay = true;
+                            video.muted = true;
+                            video.playsInline = true;
+                            video.className = 'sign-video';
+                            signDisplay.appendChild(video);
+                        }
+                    });
+                }
+            }
+
+            if (signDisplay.children.length === 0) {
+                signDisplay.innerHTML = '<p class="text-gray-500 text-center w-full">لا توجد إشارات متاحة لهذا النص</p>';
+            }
+        }
+
+        convertToSignBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if (text) {
+                convertTextToSign(text);
+            }
+        });
+
+        replaySignBtn.addEventListener('click', () => {
+            if (lastSpokenText) {
+                displaySigns(lastSpokenText);
+            }
+        });
+
+        clearSignsBtn.addEventListener('click', () => {
+            signDisplay.innerHTML = '<p class="text-gray-500 text-center w-full">سيتم عرض فيديوهات لغة الإشارة هنا</p>';
+        });
+
+        // ==================== TEXT TO SPEECH ====================
+        const ttsInput = document.getElementById('ttsInput');
+        const speakBtn = document.getElementById('speak');
+        const stopSpeakBtn = document.getElementById('stopSpeak');
+        const voiceSelect = document.getElementById('voiceSelect');
+        let voices = [];
+
+        function loadVoices() {
+            voices = speechSynthesis.getVoices();
+            voiceSelect.innerHTML = '<option value="">اختر الصوت...</option>';
+            voices.forEach((voice, i) => {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${voice.name} (${voice.lang})`;
+                if (voice.lang.includes('ar')) {
+                    option.selected = true;
+                }
+                voiceSelect.appendChild(option);
+            });
+        }
+
+        loadVoices();
+        speechSynthesis.onvoiceschanged = loadVoices;
+
+        function speakText(text) {
+            if (!text) return;
+            
+            speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ar-SA';
+            
+            const selectedVoice = voiceSelect.value;
+            if (selectedVoice !== '' && voices[selectedVoice]) {
+                utterance.voice = voices[selectedVoice];
+            }
+            
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            
+            speechSynthesis.speak(utterance);
+        }
+
+        speakBtn.addEventListener('click', () => {
+            const text = ttsInput.value.trim();
+            if (text) {
+                speakText(text);
+            }
+        });
+
+        stopSpeakBtn.addEventListener('click', () => {
+            speechSynthesis.cancel();
+        });
+
+        // ==================== SIGN TO TEXT (MEDIAPIPE) ====================
+        const startCameraBtn = document.getElementById('startCamera');
+        const stopCameraBtn = document.getElementById('stopCamera');
+        const webcam = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const canvasCtx = canvas.getContext('2d');
+        const cameraStatus = document.getElementById('cameraStatus');
+        const detectedSigns = document.getElementById('detectedSigns');
+        const speakDetectedBtn = document.getElementById('speakDetected');
+        const clearDetectedBtn = document.getElementById('clearDetected');
+
+        function onResults(results) {
+            canvasCtx.save();
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            canvasCtx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                
+                // Draw hand landmarks
+                drawConnectors(canvasCtx, landmarks, HAND_CONNECTIONS, 
+                    {color: '#00FF00', lineWidth: 2});
+                drawLandmarks(canvasCtx, landmarks, 
+                    {color: '#FF0000', lineWidth: 1, radius: 3});
+
+                // Analyze hand gesture
+                const gesture = analyzeHandGesture(landmarks);
+                if (gesture) {
+                    updateDetectedText(gesture);
+                }
+
+                cameraStatus.innerHTML = '<span class="text-green-400">✓ جارِ اكتشاف الإشارات...</span>';
+            } else {
+                cameraStatus.innerHTML = '<span class="text-yellow-400">لم يتم اكتشاف يد</span>';
+            }
+            
+            canvasCtx.restore();
+        }
+
+        function analyzeHandGesture(landmarks) {
+            // Get key points
+            const thumbTip = landmarks[4];
+            const indexTip = landmarks[8];
+            const middleTip = landmarks[12];
+            const ringTip = landmarks[16];
+            const pinkyTip = landmarks[20];
+            
+            const thumbIP = landmarks[3];
+            const indexPIP = landmarks[6];
+            const middlePIP = landmarks[10];
+            const ringPIP = landmarks[14];
+            const pinkyPIP = landmarks[18];
+            
+            const wrist = landmarks[0];
+            const indexMCP = landmarks[5];
+            const middleMCP = landmarks[9];
+            const ringMCP = landmarks[13];
+            const pinkyMCP = landmarks[17];
+
+            // Calculate finger states (extended = 1, folded = 0)
+            const fingers = {
+                thumb: thumbTip.x < thumbIP.x - 0.05 || thumbTip.x > thumbIP.x + 0.05,
+                index: indexTip.y < indexPIP.y,
+                middle: middleTip.y < middlePIP.y,
+                ring: ringTip.y < ringPIP.y,
+                pinky: pinkyTip.y < pinkyPIP.y
+            };
+
+            // Recognize common Arabic letter signs (simplified)
+            const fingerString = [
+                fingers.thumb ? 1 : 0,
+                fingers.index ? 1 : 0,
+                fingers.middle ? 1 : 0,
+                fingers.ring ? 1 : 0,
+                fingers.pinky ? 1 : 0
+            ].join('');
+
+            // Map gestures to Arabic letters (simplified mapping)
+            const gestureMap = {
+                '01110': 'ع',  // Three middle fingers extended
+                '01111': 'ش',  // Four fingers extended
+                '11111': 'ط',  // All fingers extended (flat hand)
+                '00000': ' fist', // All fingers folded
+                '11000': 'ح',  // Thumb and index extended
+                '01100': 'د',  // Index and middle extended
+                '11100': 'ل',  // Thumb, index, middle extended
+                '00100': 'و',  // Only middle finger extended
+                '11011': 'ب',  // Thumb and index extended (pinch)
+                '10000': 'ق',  // Only thumb extended
+                '00010': 'م',  // Only pinky extended
+                '00111': 'ا',  // Three fingers folded, thumb and pinky up
+            };
+
+            // Count extended fingers
+            const extendedCount = Object.values(fingers).filter(f => f).length;
+            
+            // Get palm position for basic movement detection
+            const palmX = (indexMCP.x + middleMCP.x + ringMCP.x + pinkyMCP.x) / 4;
+            const palmY = (indexMCP.y + middleMCP.y + ringMCP.y + pinkyMCP.y) / 4;
+            
+            // Store position for movement detection
+            handPositionHistory.push({ x: palmX, y: palmY, fingers: extendedCount });
+            if (handPositionHistory.length > DETECTION_THRESHOLD) {
+                handPositionHistory.shift();
+            }
+
+            return gestureMap[fingerString] || null;
+        }
+
+        function updateDetectedText(gesture) {
+            const currentText = detectedSigns.textContent.replace('🎯 ', '').trim();
+            
+            if (currentText === 'قم بإظهار إشارة اليد أمام الكاميرا' || currentText === '') {
+                detectedSigns.innerHTML = `🎯 ${gesture}`;
+            } else if (!currentText.includes(gesture)) {
+                detectedSigns.innerHTML = `🎯 ${currentText} ${gesture}`;
+            }
+            
+            lastDetectedText = currentText + ' ' + gesture;
+            speakDetectedBtn.disabled = false;
+        }
+
+        startCameraBtn.addEventListener('click', async () => {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 640, height: 480 } 
+                });
+                
+                webcam.srcObject = cameraStream;
+                
+                canvas.width = webcam.videoWidth;
+                canvas.height = webcam.videoHeight;
+
+                hands = new Hands({locateFile: (file) => {
+                    return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+                }});
+
+                hands.setOptions({
+                    maxNumHands: 1,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.7,
+                    minTrackingConfidence: 0.5
+                });
+
+                hands.onResults(onResults);
+
+                camera = new Camera(webcam, {
+                    onFrame: async () => {
+                        if (hands) {
+                            await hands.send({image: webcam});
+                        }
+                    },
+                    width: 640,
+                    height: 480
+                });
+
+                camera.start();
+                isDetecting = true;
+                
+                startCameraBtn.disabled = true;
+                stopCameraBtn.disabled = false;
+                cameraStatus.innerHTML = '<span class="text-green-400">✓ الكاميرا تعمل</span>';
+                
+            } catch (err) {
+                console.error('Camera error:', err);
+                cameraStatus.innerHTML = '<span class="text-red-400">✗ خطأ في الكاميرا: ' + err.message + '</span>';
+            }
+        });
+
+        stopCameraBtn.addEventListener('click', () => {
+            if (camera) {
+                camera.stop();
+                camera = null;
+            }
+            
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+                cameraStream = null;
+            }
+            
+            if (hands) {
+                hands.close();
+                hands = null;
+            }
+            
+            webcam.srcObject = null;
+            canvasCtx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            startCameraBtn.disabled = false;
+            stopCameraBtn.disabled = true;
+            cameraStatus.innerHTML = 'الكاميرا متوقفة';
+            isDetecting = false;
+        });
+
+        speakDetectedBtn.addEventListener('click', () => {
+            const text = detectedSigns.textContent.replace('🎯 ', '').trim();
+            if (text && text !== 'قم بإظهار إشارة اليد أمام الكاميرا') {
+                speakText(text);
+            }
+        });
+
+        clearDetectedBtn.addEventListener('click', () => {
+            detectedSigns.innerHTML = '<p class="text-gray-500 text-center">قم بإظهار إشارة اليد أمام الكاميرا</p>';
+            lastDetectedText = '';
+            speakDetectedBtn.disabled = true;
+            handPositionHistory = [];
+        });
+
+        // Initialize with Arabic voice selected
+        setTimeout(() => {
+            const arabicVoices = voices.filter(v => v.lang.includes('ar'));
+            if (arabicVoices.length > 0) {
+                voiceSelect.value = voices.indexOf(arabicVoices[0]);
+            }
+        }, 1000);
+    </script>
+</body>
+</html>

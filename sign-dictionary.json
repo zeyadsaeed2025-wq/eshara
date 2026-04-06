@@ -1,0 +1,76 @@
+{
+  "language": "Arabic Sign Language (ARL)",
+  "version": "1.0",
+  "description": "Dictionary mapping Arabic text to sign language videos",
+  "letters": {
+    "ا": "sgin_letters/ا.mp4",
+    "ب": "sgin_letters/ب.mp4",
+    "ت": "sgin_letters/ت.mp4",
+    "ث": "sgin_letters/ث.mp4",
+    "ج": "sgin_letters/ج.mp4",
+    "ح": "sgin_letters/ح.mp4",
+    "خ": "sgin_letters/خ.mp4",
+    "د": "sgin_letters/د.mp4",
+    "ذ": "sgin_letters/ذ.mp4",
+    "ر": "sgin_letters/ر.mp4",
+    "ز": "sgin_letters/ز.mp4",
+    "س": "sgin_letters/س.mp4",
+    "ش": "sgin_letters/ش.mp4",
+    "ص": "sgin_letters/ص.mp4",
+    "ض": "sgin_letters/ض.mp4",
+    "ط": "sgin_letters/ط.mp4",
+    "ظ": "sgin_letters/ظ.mp4",
+    "ع": "sgin_letters/ع.mp4",
+    "غ": "sgin_letters/غ.mp4",
+    "ف": "sgin_letters/ف.mp4",
+    "ق": "sgin_letters/ق.mp4",
+    "ك": "sgin_letters/ك.mp4",
+    "ل": "sgin_letters/ل.mp4",
+    "م": "sgin_letters/م.mp4",
+    "ن": "sgin_letters/ن.mp4",
+    "ه": "sgin_letters/ه.mp4",
+    "و": "sgin_letters/و.mp4",
+    "ي": "sgin_letters/ي.mp4",
+    "ى": "sgin_letters/ى.mp4",
+    "ء": "sgin_letters/ء.mp4",
+    "آ": "sgin_letters/آ.mp4",
+    "أ": "sgin_letters/أ.mp4",
+    "إ": "sgin_letters/إ.mp4",
+    "ؤ": "sgin_letters/ؤ.mp4",
+    "ئ": "sgin_letters/ئ.mp4",
+    "لا": "sgin_letters/لا.mp4",
+    "ال": "sgin_letters/ال.mp4"
+  },
+  "phrases": {
+    "صباح الخير": "sgin_letters/صباح الخير.mp4",
+    "مساء الخير": "sgin_letters/مساء الخير.mp4",
+    "عامل ايه": "sgin_letters/عامل ايه.mp4",
+    "انت كويس": "sgin_letters/انت كويس.mp4",
+    "انت جعان": "sgin_letters/انت جعان.mp4",
+    "انت متزوج": "sgin_letters/انت متزوج.mp4",
+    "انت مش عاجبني": "sgin_letters/انت مش عجابني.mp4",
+    "خالي بالك": "sgin_letters/خالي بالك.mp4",
+    "استنى": "sgin_letters/استنى.mp4",
+    "خلصت المدرسه": "sgin_letters/خلصت المدرسه.mp4"
+  },
+  "gestures": {
+    "hello": "images/hello.png",
+    "thanks": "images/thanks.png",
+    "goodbye": "images/goodbye.png",
+    "please": "images/please.png",
+    "yes": "images/yes.png",
+    "no": "images/no.png"
+  },
+  "future_languages": {
+    "ASL": {
+      "description": "American Sign Language",
+      "supported": false,
+      "notes": "Can be added in Phase 2"
+    },
+    "BSL": {
+      "description": "British Sign Language",
+      "supported": false,
+      "notes": "Can be added in Phase 2"
+    }
+  }
+}

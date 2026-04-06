@@ -1,0 +1,78 @@
+{
+  "language": "Arabic Sign Language (ARL)",
+  "version": "1.0",
+  "total_entries": 48,
+  
+  "letters": {
+    "description": "Arabic alphabet letters",
+    "count": 28,
+    "entries": [
+      {"letter": "ا", "name": "alif", "arabic_name": "ألف", "video": "letters/alif.mp4"},
+      {"letter": "ب", "name": "ba", "arabic_name": "باء", "video": "letters/ba.mp4"},
+      {"letter": "ت", "name": "ta", "arabic_name": "تاء", "video": "letters/ta.mp4"},
+      {"letter": "ث", "name": "tha", "arabic_name": "ثاء", "video": "letters/tha.mp4"},
+      {"letter": "ج", "name": "jeem", "arabic_name": "جيم", "video": "letters/jeem.mp4"},
+      {"letter": "ح", "name": "ha", "arabic_name": "حاء", "video": "letters/ha.mp4"},
+      {"letter": "خ", "name": "kha", "arabic_name": "خاء", "video": "letters/kha.mp4"},
+      {"letter": "د", "name": "dal", "arabic_name": "دال", "video": "letters/dal.mp4"},
+      {"letter": "ذ", "name": "dhal", "arabic_name": "ذال", "video": "letters/dhal.mp4"},
+      {"letter": "ر", "name": "ra", "arabic_name": "راء", "video": "letters/ra.mp4"},
+      {"letter": "ز", "name": "zay", "arabic_name": "زاي", "video": "letters/zay.mp4"},
+      {"letter": "س", "name": "sin", "arabic_name": "سين", "video": "letters/sin.mp4"},
+      {"letter": "ش", "name": "shin", "arabic_name": "شين", "video": "letters/shin.mp4"},
+      {"letter": "ص", "name": "sad", "arabic_name": "صاد", "video": "letters/sad.mp4"},
+      {"letter": "ض", "name": "dad", "arabic_name": "ضاد", "video": "letters/dad.mp4"},
+      {"letter": "ط", "name": "taa", "arabic_name": "طاء", "video": "letters/taa.mp4"},
+      {"letter": "ظ", "name": "zaa", "arabic_name": "ظاء", "video": "letters/zaa.mp4"},
+      {"letter": "ع", "name": "ain", "arabic_name": "عين", "video": "letters/ain.mp4"},
+      {"letter": "غ", "name": "ghain", "arabic_name": "غين", "video": "letters/ghain.mp4"},
+      {"letter": "ف", "name": "fa", "arabic_name": "فاء", "video": "letters/fa.mp4"},
+      {"letter": "ق", "name": "qaf", "arabic_name": "قاف", "video": "letters/qaf.mp4"},
+      {"letter": "ك", "name": "kaf", "arabic_name": "كاف", "video": "letters/kaf.mp4"},
+      {"letter": "ل", "name": "lam", "arabic_name": "لام", "video": "letters/lam.mp4"},
+      {"letter": "م", "name": "meem", "arabic_name": "ميم", "video": "letters/meem.mp4"},
+      {"letter": "ن", "name": "noon", "arabic_name": "نون", "video": "letters/noon.mp4"},
+      {"letter": "ه", "name": "haa", "arabic_name": "هاء", "video": "letters/haa.mp4"},
+      {"letter": "و", "name": "waw", "arabic_name": "واو", "video": "letters/waw.mp4"},
+      {"letter": "ي", "name": "ya", "arabic_name": "ياء", "video": "letters/ya.mp4"}
+    ]
+  },
+  
+  "words": {
+    "description": "Common Arabic words and phrases",
+    "count": 20,
+    "entries": [
+      {"word": "صباح الخير", "translation": "good_morning", "category": "greeting", "video": "words/sabah_al_khair.mp4"},
+      {"word": "مساء الخير", "translation": "good_evening", "category": "greeting", "video": "words/masaa_al_khair.mp4"},
+      {"word": "شكراً", "translation": "thank_you", "category": "expression", "video": "words/shukran.mp4"},
+      {"word": "أهلاً", "translation": "hello", "category": "greeting", "video": "words/ahlan.mp4"},
+      {"word": "مرحبا", "translation": "welcome", "category": "greeting", "video": "words/marhaba.mp4"},
+      {"word": "مع السلامة", "translation": "goodbye", "category": "greeting", "video": "words/maa_al_salamah.mp4"},
+      {"word": "نعم", "translation": "yes", "category": "basic", "video": "words/naam.mp4"},
+      {"word": "لا", "translation": "no", "category": "basic", "video": "words/laa.mp4"},
+      {"word": "من فضلك", "translation": "please", "category": "expression", "video": "words/min_fadlak.mp4"},
+      {"word": "كيف حالك", "translation": "how_are_you", "category": "question", "video": "words/kayf_halak.mp4"},
+      {"word": "أنا بخير", "translation": "i_am_fine", "category": "response", "video": "words/ana_bekhair.mp4"},
+      {"word": "أعتذر", "translation": "sorry", "category": "expression", "video": "words/aatadir.mp4"},
+      {"word": "أنا أعمى", "translation": "i_am_deaf", "category": "identity", "video": "words/ana_asamm.mp4"},
+      {"word": "أريد المساعدة", "translation": "i_need_help", "category": "request", "video": "words/ureed_al_musaada.mp4"},
+      {"word": "أين", "translation": "where", "category": "question", "video": "words/ayna.mp4"},
+      {"word": "متى", "translation": "when", "category": "question", "video": "words/mataa.mp4"},
+      {"word": "كم", "translation": "how_much", "category": "question", "video": "words/kam.mp4"},
+      {"word": "ما هذا", "translation": "what_is_this", "category": "question", "video": "words/ma_hadha.mp4"},
+      {"word": "أنا", "translation": "i_me", "category": "pronoun", "video": "words/ana.mp4"},
+      {"word": "أنت", "translation": "you", "category": "pronoun", "video": "words/anta.mp4"}
+    ]
+  },
+  
+  "categories": [
+    "greeting",
+    "expression",
+    "question",
+    "basic",
+    "response",
+    "identity",
+    "request",
+    "pronoun"
+  ]
+}

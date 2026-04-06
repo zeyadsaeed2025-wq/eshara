@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI مترجم لغة الإشارة - 3D Avatar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Cairo', sans-serif; }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 50%, #1e1b4b 100%);
+        }
+        
+        #avatar-container {
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%);
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        #avatar-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .sign-label {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-size: 18px;
+            color: white;
+        }
+        
+        .recording-pulse {
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.5); }
+            50% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.8); }
+        }
+
+        .loading-spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid #38bdf8;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <div id="app" class="container mx-auto px-4 py-8 max-w-7xl">
+        
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
+                🤟 AI مترجم لغة الإشارة - 3D
+            </h1>
+            <p class="text-gray-400">Avatar ثلاثي الأبعاد يترجم الكلام إلى لغة الإشارة</p>
+        </header>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left: Avatar Display -->
+            <div class="lg:col-span-2">
+                <div class="glass rounded-2xl p-6">
+                    <h2 class="text-xl font-semibold mb-4 flex items-center gap-2">
+                        <span class="text-2xl">🎭</span> الشخصية ثلاثية الأبعاد
+                    </h2>
+                    
+                    <div id="avatar-container">
+                        <canvas id="avatar-canvas"></canvas>
+                        <div id="sign-label" class="sign-label" style="display: none;">
+                            جارِ العرض...
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-center gap-4 mt-4">
+                        <button id="playSign" class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 px-6 py-3 rounded-xl font-semibold transition-all" disabled>
+                            ▶️ تشغيل الإشارة
+                        </button>
+                        <button id="stopSign" class="bg-gray-600 hover:bg-gray-500 px-6 py-3 rounded-xl font-semibold transition-all" disabled>
+                            ⏹️ إيقاف
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Animation Status -->
+                <div class="glass rounded-2xl p-4 mt-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-400">حالة الرسوم المتحركة:</span>
+                        <span id="animation-status" class="text-yellow-400">في انتظار الإدخال...</span>
+                    </div>
+                    <div class="mt-2">
+                        <span class="text-gray-400">الحرف الحالي: </span>
+                        <span id="current-letter" class="text-cyan-400 font-bold text-xl">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Controls -->
+            <div class="space-y-4">
+                
+                <!-- Speech Input -->
+                <div class="glass rounded-2xl p-5">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+                        <span>🎤</span> إدخال الكلام
+                    </h3>
+                    
+                    <div class="flex gap-2 mb-3">
+                        <button id="startSpeech" 
+                            class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 px-4 py-2 rounded-lg font-semibold transition-all">
+                            🎙️ ابدأ
+                        </button>
+                        <button id="stopSpeech" 
+                            class="flex-1 bg-gray-600 px-4 py-2 rounded-lg font-semibold transition-all" disabled>
+                            ⏹️ إيقاف
+                        </button>
+                    </div>
+                    
+                    <textarea id="speechInput" 
+                        class="w-full bg-slate-800/50 border border-slate-600 rounded-xl p-3 text-base resize-none focus:border-cyan-500 focus:outline-none"
+                        rows="2" placeholder="الكلام سيظهر هنا..."></textarea>
+                </div>
+
+                <!-- Text Input -->
+                <div class="glass rounded-2xl p-5">
+                    <h3 class="text-lg font-semibold mb-3 flex items-center gap-2">
+                        <span>📝</span> إدخال النص
+                    </h3>
+                    
+                    <div class="flex gap-2">
+                        <input id="textInput" type="text" 
+                            class="flex-1 bg-slate-800/50 border border-slate-600 rounded-xl p-3 focus:border-cyan-500 focus:outline-none"
+                            placeholder="اكتب النص...">
+                        <button id="convertToSign" 
+                            class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-400 hover:to-pink-500 px-4 py-2 rounded-xl font-semibold transition-all">
+                            ▶️
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Phrases -->
+                <div class="glass rounded-2xl p-5">
+                    <h3 class="text-lg font-semibold mb-3">📌 عبارات سريعة</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="phrase-btn bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm transition-all" data-phrase="صباح الخير">صباح الخير</button>
+                        <button class="phrase-btn bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm transition-all" data-phrase="مساء الخير">مساء الخير</button>
+                        <button class="phrase-btn bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm transition-all" data-phrase="كيف حالك">كيف حالك</button>
+                        <button class="phrase-btn bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm transition-all" data-phrase="شكرا">شكرا</button>
+                        <button class="phrase-btn bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm transition-all" data-phrase="أهلاً">أهلاً</button>
+                        <button class="phrase-btn bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm transition-all" data-phrase="مع السلامة">مع السلامة</button>
+                        <button class="phrase-btn bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm transition-all" data-phrase="نعم">نعم</button>
+                        <button class="phrase-btn bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-sm transition-all" data-phrase="لا">لا</button>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="glass rounded-2xl p-5">
+                    <h3 class="text-lg font-semibold mb-3">⚙️ الإعدادات</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm text-gray-400">سرعة الحركة:</label>
+                            <input type="range" id="speedRange" min="0.5" max="2" step="0.1" value="1" class="w-full">
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-400">حجم الشخصية:</label>
+                            <input type="range" id="scaleRange" min="0.5" max="2" step="0.1" value="1" class="w-full">
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="loopCheck" checked>
+                            <label for="loopCheck" class="text-sm">تكرار الإشارة</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Instructions -->
+        <div class="glass rounded-2xl p-6 mt-6">
+            <h3 class="text-lg font-semibold mb-3">📖 كيفية الاستخدام</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-300">
+                <div class="flex gap-2">
+                    <span class="text-2xl">1️⃣</span>
+                    <div>
+                        <strong class="text-white"> Speak or Type</strong>
+                        <p>تحدث بالميكروفون أو اكتب النص</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <span class="text-2xl">2️⃣</span>
+                    <div>
+                        <strong class="text-white"> Auto Translate</strong>
+                        <p>سيتم ترجمته تلقائياً لإشارات</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <span class="text-2xl">3️⃣</span>
+                    <div>
+                        <strong class="text-white"> Watch Avatar</strong>
+                        <p>شاهد الشخصية تؤدي الإشارات</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center mt-8 text-gray-500 text-sm">
+            <p>AI Sign Language Translator - 3D Avatar Version</p>
+        </footer>
+    </div>
+
+    <script>
+        // ==================== THREE.JS 3D AVATAR ====================
+        let scene, camera, renderer, avatar, leftHand, rightHand;
+        let isAnimating = false;
+        let currentAnimation = null;
+        let animationQueue = [];
+        let animationSpeed = 1;
+        let avatarScale = 1;
+
+        // Sign animations definition
+        const signAnimations = {
+            // Basic hand poses (normalized 0-1)
+            'ا': { right: { pos: [0.3, 0, 0], rot: [0, 0, 0.5] }, name: 'الألف' },
+            'ب': { right: { pos: [0.25, -0.1, 0.1], rot: [0, 0, 0.8] }, name: 'الباء' },
+            'ت': { right: { pos: [0.25, -0.15, 0.1], rot: [0, 0, 0.7] }, name: 'التاء' },
+            'ث': { right: { pos: [0.25, -0.12, 0.1], rot: [0, 0, 0.6] }, name: 'الثاء' },
+            'ج': { right: { pos: [0.3, -0.05, 0.15], rot: [0, 0.3, 0.9] }, name: 'الجيم' },
+            'ح': { right: { pos: [0.25, 0, 0.1], rot: [0, 0, 0.3] }, name: 'الحاء' },
+            'خ': { right: { pos: [0.28, -0.08, 0.12], rot: [0, 0, 0.4] }, name: 'الخاء' },
+            'د': { right: { pos: [0.25, -0.2, 0.1], rot: [0, 0, 1.2] }, name: 'الدال' },
+            'ذ': { right: { pos: [0.25, -0.18, 0.1], rot: [0, 0, 1.1] }, name: 'الذال' },
+            'ر': { right: { pos: [0.25, -0.15, 0.1], rot: [0, 0, 1.3] }, name: 'الراء' },
+            'ز': { right: { pos: [0.25, -0.12, 0.1], rot: [0, 0.2, 1.2] }, name: 'الزاي' },
+            'س': { right: { pos: [0.25, -0.1, 0.1], rot: [0, 0, 0.9] }, name: 'السين' },
+            'ش': { right: { pos: [0.25, -0.08, 0.1], rot: [0, 0, 0.8] }, name: 'الشين' },
+            'ص': { right: { pos: [0.3, 0.05, 0.1], rot: [0, 0, 0.2] }, name: 'الصاد' },
+            'ض': { right: { pos: [0.28, 0.02, 0.12], rot: [0, 0, 0.3] }, name: 'الضاد' },
+            'ط': { right: { pos: [0.25, 0, 0.1], rot: [0, 0, 0.1] }, name: 'الطاء' },
+            'ظ': { right: { pos: [0.25, 0.02, 0.1], rot: [0, 0, 0.15] }, name: 'الظاء' },
+            'ع': { right: { pos: [0.25, -0.05, 0.1], rot: [0, 0, 0.7] }, name: 'العين' },
+            'غ': { right: { pos: [0.28, -0.06, 0.12], rot: [0, 0, 0.6] }, name: 'الغين' },
+            'ف': { right: { pos: [0.25, -0.1, 0.1], rot: [0, 0, 0.5] }, name: 'الفاء' },
+            'ق': { right: { pos: [0.3, 0, 0.15], rot: [0, 0.2, 0.8] }, name: 'القاف' },
+            'ك': { right: { pos: [0.25, -0.08, 0.1], rot: [0, 0, 0.6] }, name: 'الكاف' },
+            'ل': { right: { pos: [0.3, 0.1, 0.1], rot: [0, 0, 0.3] }, name: 'اللام' },
+            'م': { right: { pos: [0.25, -0.15, 0.1], rot: [0, 0, 0.2] }, name: 'الميم' },
+            'ن': { right: { pos: [0.25, -0.12, 0.1], rot: [0, 0, 0.4] }, name: 'النون' },
+            'ه': { right: { pos: [0.25, -0.1, 0.1], rot: [0, 0, 0.5] }, name: 'الهاء' },
+            'و': { right: { pos: [0.2, -0.1, 0.15], rot: [0, 0.3, 0.3] }, name: 'الواو' },
+            'ي': { right: { pos: [0.25, -0.08, 0.1], rot: [0, 0, 0.7] }, name: 'الياء' },
+            
+            // Common phrases
+            'صباح الخير': { right: { pos: [0.3, 0, 0.1], rot: [0, 0, 0.3] }, left: { pos: [-0.3, 0, 0.1], rot: [0, 0, -0.3] }, name: 'صباح الخير' },
+            'مساء الخير': { right: { pos: [0.3, 0, 0.1], rot: [0, 0, 0.3] }, left: { pos: [-0.3, 0, 0.1], rot: [0, 0, -0.3] }, name: 'مساء الخير' },
+            'شكرا': { right: { pos: [0.3, 0.05, 0.15], rot: [0, 0.2, 0.8] }, name: 'شكرا' },
+            'كيف حالك': { right: { pos: [0.25, -0.1, 0.1], rot: [0, 0, 0.5] }, name: 'كيف حالك' },
+            'أهلاً': { right: { pos: [0.3, 0.05, 0.1], rot: [0, 0, 0.4] }, name: 'أهلاً' },
+            'مع السلامة': { right: { pos: [0.25, -0.1, 0.1], rot: [0, 0.2, 0.6] }, name: 'مع السلامة' },
+            'نعم': { right: { pos: [0.3, 0.1, 0.1], rot: [0, 0, 0.2] }, name: 'نعم' },
+            'لا': { right: { pos: [0.25, 0.05, 0.1], rot: [0, 0, 0.8] }, name: 'لا' }
+        };
+
+        // Rest position
+        const restPosition = {
+            right: { pos: [0.25, -0.1, 0.1], rot: [0, 0, 0.3] },
+            left: { pos: [-0.25, -0.1, 0.1], rot: [0, 0, -0.3] }
+        };
+
+        function initThreeJS() {
+            const canvas = document.getElementById('avatar-canvas');
+            const container = document.getElementById('avatar-container');
+            
+            // Scene
+            scene = new THREE.Scene();
+            
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0.5, 3);
+            camera.lookAt(0, 0.3, 0);
+            
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setClearColor(0x000000, 0);
+            
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(2, 3, 2);
+            scene.add(directionalLight);
+            
+            const backLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+            backLight.position.set(-2, 1, -2);
+            scene.add(backLight);
+            
+            // Create avatar
+            createAvatar();
+            
+            // Handle resize
+            window.addEventListener('resize', onWindowResize);
+            
+            // Start animation loop
+            animate();
+        }
+
+        function createAvatar() {
+            avatar = new THREE.Group();
+            
+            // Materials
+            const skinMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xffdbac,
+                roughness: 0.7,
+                metalness: 0.1
+            });
+            
+            const clothMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x2d5a7b,
+                roughness: 0.8
+            });
+            
+            const hairMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x3d2314,
+                roughness: 0.9
+            });
+
+            // Body (torso)
+            const bodyGeom = new THREE.CylinderGeometry(0.25, 0.3, 0.8, 16);
+            const body = new THREE.Mesh(bodyGeom, clothMaterial);
+            body.position.y = -0.4;
+            avatar.add(body);
+            
+            // Head
+            const headGeom = new THREE.SphereGeometry(0.22, 32, 32);
+            const head = new THREE.Mesh(headGeom, skinMaterial);
+            head.position.y = 0.3;
+            avatar.add(head);
+            
+            // Hair
+            const hairGeom = new THREE.SphereGeometry(0.23, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
+            const hair = new THREE.Mesh(hairGeom, hairMaterial);
+            hair.position.y = 0.35;
+            hair.rotation.x = Math.PI;
+            avatar.add(hair);
+            
+            // Eyes
+            const eyeGeom = new THREE.SphereGeometry(0.025, 16, 16);
+            const eyeMaterial = new THREE.MeshStandardMaterial({ color: 0x222222 });
+            
+            const leftEye = new THREE.Mesh(eyeGeom, eyeMaterial);
+            leftEye.position.set(-0.08, 0.35, 0.18);
+            avatar.add(leftEye);
+            
+            const rightEye = new THREE.Mesh(eyeGeom, eyeMaterial);
+            rightEye.position.set(0.08, 0.35, 0.18);
+            avatar.add(rightEye);
+            
+            // Eyebrows
+            const eyebrowGeom = new THREE.BoxGeometry(0.06, 0.01, 0.01);
+            const eyebrowMaterial = new THREE.MeshStandardMaterial({ color: 0x2d1810 });
+            
+            const leftEyebrow = new THREE.Mesh(eyebrowGeom, eyebrowMaterial);
+            leftEyebrow.position.set(-0.08, 0.4, 0.19);
+            avatar.add(leftEyebrow);
+            
+            const rightEyebrow = new THREE.Mesh(eyebrowGeom, eyebrowMaterial);
+            rightEyebrow.position.set(0.08, 0.4, 0.19);
+            avatar.add(rightEyebrow);
+            
+            // Mouth
+            const mouthGeom = new THREE.TorusGeometry(0.04, 0.01, 8, 16, Math.PI);
+            const mouthMaterial = new THREE.MeshStandardMaterial({ color: 0xcc8888 });
+            const mouth = new THREE.Mesh(mouthGeom, mouthMaterial);
+            mouth.position.set(0, 0.22, 0.19);
+            mouth.rotation.x = Math.PI;
+            avatar.add(mouth);
+            
+            // Neck
+            const neckGeom = new THREE.CylinderGeometry(0.08, 0.1, 0.15, 16);
+            const neck = new THREE.Mesh(neckGeom, skinMaterial);
+            neck.position.y = 0.08;
+            avatar.add(neck);
+            
+            // Arms
+            const armGeom = new THREE.CylinderGeometry(0.06, 0.07, 0.6, 16);
+            
+            // Right arm
+            rightHand = new THREE.Group();
+            const rightUpperArm = new THREE.Mesh(armGeom, clothMaterial);
+            rightUpperArm.position.y = -0.3;
+            rightHand.add(rightUpperArm);
+            
+            const rightForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.5, 16), skinMaterial);
+            rightForearm.position.y = -0.65;
+            rightHand.add(rightForearm);
+            
+            // Right hand
+            const handGeom = new THREE.SphereGeometry(0.07, 16, 16);
+            const rightHandMesh = new THREE.Mesh(handGeom, skinMaterial);
+            rightHandMesh.position.y = -0.95;
+            rightHand.add(rightHandMesh);
+            
+            // Right fingers
+            for (let i = 0; i < 5; i++) {
+                const fingerGeom = new THREE.CylinderGeometry(0.012, 0.015, 0.12, 8);
+                const finger = new THREE.Mesh(fingerGeom, skinMaterial);
+                finger.position.set((i - 2) * 0.025, -1.05, 0);
+                rightHand.add(finger);
+            }
+            
+            rightHand.position.set(0.35, 0.05, 0);
+            avatar.add(rightHand);
+            
+            // Left arm
+            leftHand = new THREE.Group();
+            const leftUpperArm = new THREE.Mesh(armGeom, clothMaterial);
+            leftUpperArm.position.y = -0.3;
+            leftHand.add(leftUpperArm);
+            
+            const leftForearm = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.5, 16), skinMaterial);
+            leftForearm.position.y = -0.65;
+            leftHand.add(leftForearm);
+            
+            // Left hand
+            const leftHandMesh = new THREE.Mesh(handGeom, skinMaterial);
+            leftHandMesh.position.y = -0.95;
+            leftHand.add(leftHandMesh);
+            
+            // Left fingers
+            for (let i = 0; i < 5; i++) {
+                const fingerGeom = new THREE.CylinderGeometry(0.012, 0.015, 0.12, 8);
+                const finger = new THREE.Mesh(fingerGeom, skinMaterial);
+                finger.position.set((i - 2) * 0.025, -1.05, 0);
+                leftHand.add(finger);
+            }
+            
+            leftHand.position.set(-0.35, 0.05, 0);
+            avatar.add(leftHand);
+            
+            // Legs
+            const legGeom = new THREE.CylinderGeometry(0.08, 0.07, 0.7, 16);
+            const pantMaterial = new THREE.MeshStandardMaterial({ color: 0x1a365d });
+            
+            const rightLeg = new THREE.Mesh(legGeom, pantMaterial);
+            rightLeg.position.set(0.12, -1.1, 0);
+            avatar.add(rightLeg);
+            
+            const leftLeg = new THREE.Mesh(legGeom, pantMaterial);
+            leftLeg.position.set(-0.12, -1.1, 0);
+            avatar.add(leftLeg);
+            
+            // Position avatar
+            avatar.position.y = 0.5;
+            scene.add(avatar);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('avatar-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Subtle idle animation
+            if (avatar && !isAnimating) {
+                avatar.position.y = 0.5 + Math.sin(Date.now() * 0.001) * 0.02;
+                avatar.rotation.y = Math.sin(Date.now() * 0.0005) * 0.05;
+                
+                // Idle hand movement
+                if (rightHand) {
+                    rightHand.rotation.z = restPosition.right.rot[2] + Math.sin(Date.now() * 0.002) * 0.05;
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // ==================== ANIMATION SYSTEM ====================
+        function playSignAnimation(letter, duration = 1500) {
+            const animation = signAnimations[letter] || signAnimations['ا'];
+            
+            isAnimating = true;
+            document.getElementById('playSign').disabled = true;
+            document.getElementById('stopSign').disabled = false;
+            document.getElementById('animation-status').textContent = `جاري عرض: ${animation.name || letter}`;
+            document.getElementById('animation-status').className = 'text-green-400';
+            document.getElementById('current-letter').textContent = letter;
+            
+            const signLabel = document.getElementById('sign-label');
+            signLabel.style.display = 'block';
+            signLabel.textContent = animation.name || letter;
+            
+            const startTime = Date.now();
+            const animDuration = duration / animationSpeed;
+            
+            function animateToPose() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / animDuration, 1);
+                
+                // Easing function
+                const eased = 1 - Math.pow(1 - progress, 3);
+                
+                if (animation.right) {
+                    // Animate right hand
+                    rightHand.position.x = THREE.MathUtils.lerp(restPosition.right.pos[0], animation.right.pos[0], eased);
+                    rightHand.position.y = THREE.MathUtils.lerp(restPosition.right.pos[1], animation.right.pos[1], eased);
+                    rightHand.position.z = THREE.MathUtils.lerp(restPosition.right.pos[2], animation.right.pos[2], eased);
+                    
+                    rightHand.rotation.x = THREE.MathUtils.lerp(restPosition.right.rot[0], animation.right.rot[0], eased);
+                    rightHand.rotation.y = THREE.MathUtils.lerp(restPosition.right.rot[1], animation.right.rot[1], eased);
+                    rightHand.rotation.z = THREE.MathUtils.lerp(restPosition.right.rot[2], animation.right.rot[2], eased);
+                }
+                
+                if (animation.left) {
+                    // Animate left hand
+                    leftHand.position.x = THREE.MathUtils.lerp(restPosition.left.pos[0], animation.left.pos[0], eased);
+                    leftHand.position.y = THREE.MathUtils.lerp(restPosition.left.pos[1], animation.left.pos[1], eased);
+                    leftHand.position.z = THREE.MathUtils.lerp(restPosition.left.pos[2], animation.left.pos[2], eased);
+                    
+                    leftHand.rotation.x = THREE.MathUtils.lerp(restPosition.left.rot[0], animation.left.rot[0], eased);
+                    leftHand.rotation.y = THREE.MathUtils.lerp(restPosition.left.rot[1], animation.left.rot[1], eased);
+                    leftHand.rotation.z = THREE.MathUtils.lerp(restPosition.left.rot[2], animation.left.rot[2], eased);
+                }
+                
+                // Body movement
+                avatar.position.y = 0.5 + Math.sin(progress * Math.PI * 2) * 0.05 * eased;
+                
+                if (progress < 1) {
+                    currentAnimation = requestAnimationFrame(animateToPose);
+                } else {
+                    // Animation complete - hold for a moment
+                    setTimeout(() => {
+                        if (isAnimating) {
+                            returnToRest();
+                        }
+                    }, 500 / animationSpeed);
+                }
+            }
+            
+            animateToPose();
+        }
+
+        function returnToRest() {
+            const startTime = Date.now();
+            const duration = 500 / animationSpeed;
+            
+            function animateBack() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                
+                // Return right hand to rest
+                rightHand.position.x = THREE.MathUtils.lerp(rightHand.position.x, restPosition.right.pos[0], eased * 0.2);
+                rightHand.position.y = THREE.MathUtils.lerp(rightHand.position.y, restPosition.right.pos[1], eased * 0.2);
+                rightHand.position.z = THREE.MathUtils.lerp(rightHand.position.z, restPosition.right.pos[2], eased * 0.2);
+                
+                rightHand.rotation.z = THREE.MathUtils.lerp(rightHand.rotation.z, restPosition.right.rot[2], eased * 0.2);
+                
+                // Return left hand
+                leftHand.position.x = THREE.MathUtils.lerp(leftHand.position.x, restPosition.left.pos[0], eased * 0.2);
+                leftHand.position.y = THREE.MathUtils.lerp(leftHand.position.y, restPosition.left.pos[1], eased * 0.2);
+                leftHand.position.z = THREE.MathUtils.lerp(leftHand.position.z, restPosition.left.pos[2], eased * 0.2);
+                
+                leftHand.rotation.z = THREE.MathUtils.lerp(leftHand.rotation.z, restPosition.left.rot[2], eased * 0.2);
+                
+                avatar.position.y = THREE.MathUtils.lerp(avatar.position.y, 0.5, eased * 0.2);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animateBack);
+                } else {
+                    isAnimating = false;
+                    document.getElementById('playSign').disabled = false;
+                    document.getElementById('stopSign').disabled = true;
+                    document.getElementById('animation-status').textContent = 'في انتظار الإدخال...';
+                    document.getElementById('animation-status').className = 'text-yellow-400';
+                    document.getElementById('sign-label').style.display = 'none';
+                    
+                    // Process next in queue
+                    if (animationQueue.length > 0) {
+                        const next = animationQueue.shift();
+                        playSignAnimation(next.letter, next.duration);
+                    }
+                }
+            }
+            
+            animateBack();
+        }
+
+        function stopAnimation() {
+            if (currentAnimation) {
+                cancelAnimationFrame(currentAnimation);
+            }
+            animationQueue = [];
+            returnToRest();
+        }
+
+        function playTextAsSigns(text) {
+            // Normalize and split text
+            const normalized = text.toLowerCase().trim();
+            
+            // Check for complete phrase first
+            if (signAnimations[normalized]) {
+                playSignAnimation(normalized);
+                return;
+            }
+            
+            // Split into words and letters
+            const words = normalized.split(' ');
+            
+            words.forEach((word, wordIndex) => {
+                // Check if word exists as phrase
+                if (signAnimations[word]) {
+                    animationQueue.push({ letter: word, duration: 1500 });
+                } else {
+                    // Split into letters
+                    const letters = word.replace(/[^\u0600-\u06FF]/g, '').split('');
+                    letters.forEach(letter => {
+                        if (signAnimations[letter]) {
+                            animationQueue.push({ letter: letter, duration: 800 });
+                        }
+                    });
+                }
+                
+                // Add pause between words
+                if (wordIndex < words.length - 1) {
+                    animationQueue.push({ letter: 'pause', duration: 300 });
+                }
+            });
+            
+            // Start first animation
+            if (animationQueue.length > 0) {
+                const first = animationQueue.shift();
+                if (first.letter !== 'pause') {
+                    playSignAnimation(first.letter, first.duration);
+                } else {
+                    returnToRest();
+                }
+            }
+        }
+
+        // ==================== SPEECH TO TEXT ====================
+        let recognition = null;
+        const startSpeechBtn = document.getElementById('startSpeech');
+        const stopSpeechBtn = document.getElementById('stopSpeech');
+        const speechInput = document.getElementById('speechInput');
+
+        function initSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('المتصفح لا يدعم التعرف على الكلام. يرجى استخدام Chrome.');
+                return null;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognizer = new SpeechRecognition();
+            recognizer.lang = 'ar-SA';
+            recognizer.continuous = true;
+            recognizer.interimResults = true;
+
+            recognizer.onstart = () => {
+                startSpeechBtn.disabled = true;
+                stopSpeechBtn.disabled = false;
+                startSpeechBtn.classList.add('recording-pulse');
+            };
+
+            recognizer.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                speechInput.value = transcript;
+                
+                // Auto translate to signs
+                if (event.results[event.results.length - 1].isFinal) {
+                    playTextAsSigns(transcript);
+                }
+            };
+
+            recognizer.onend = () => {
+                startSpeechBtn.disabled = false;
+                stopSpeechBtn.disabled = true;
+                startSpeechBtn.classList.remove('recording-pulse');
+            };
+
+            recognizer.onerror = (event) => {
+                console.error('Speech error:', event.error);
+            };
+
+            return recognizer;
+        }
+
+        startSpeechBtn.addEventListener('click', () => {
+            if (!recognition) {
+                recognition = initSpeechRecognition();
+            }
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.log('Already started');
+                }
+            }
+        });
+
+        stopSpeechBtn.addEventListener('click', () => {
+            if (recognition) {
+                recognition.stop();
+            }
+        });
+
+        // ==================== TEXT INPUT ====================
+        const textInput = document.getElementById('textInput');
+        const convertToSignBtn = document.getElementById('convertToSign');
+        const playSignBtn = document.getElementById('playSign');
+        const stopSignBtn = document.getElementById('stopSign');
+
+        convertToSignBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if (text) {
+                playTextAsSigns(text);
+            }
+        });
+
+        playSignBtn.addEventListener('click', () => {
+            const text = textInput.value.trim() || speechInput.value.trim();
+            if (text) {
+                playTextAsSigns(text);
+            }
+        });
+
+        stopSignBtn.addEventListener('click', stopAnimation);
+
+        // ==================== QUICK PHRASES ====================
+        document.querySelectorAll('.phrase-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const phrase = btn.dataset.phrase;
+                textInput.value = phrase;
+                playTextAsSigns(phrase);
+            });
+        });
+
+        // ==================== SETTINGS ====================
+        document.getElementById('speedRange').addEventListener('input', (e) => {
+            animationSpeed = parseFloat(e.target.value);
+        });
+
+        document.getElementById('scaleRange').addEventListener('input', (e) => {
+            avatarScale = parseFloat(e.target.value);
+            if (avatar) {
+                avatar.scale.setScalar(avatarScale);
+            }
+        });
+
+        // ==================== INITIALIZE ====================
+        document.addEventListener('DOMContentLoaded', initThreeJS);
+    </script>
+</body>
+</html>
