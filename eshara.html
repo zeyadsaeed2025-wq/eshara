@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESHARA - مترجم لغة الإشارة</title>
+    <meta name="description" content="ESHARA - Real-time Arabic Sign Language Translator with AI">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Cairo', sans-serif; }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 50%, #0f0f2a 100%);
+        }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .robot-glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 200, 255, 0.2) 0%, transparent 70%);
+            pointer-events: none;
+            animation: glow-pulse 2s infinite;
+        }
+        
+        @keyframes glow-pulse {
+            0%, 100% { opacity: 0.5; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        .recording-pulse {
+            animation: pulse-ring 1.5s infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(0, 255, 136, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+        }
+        
+        .scroll-container {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 12px;
+            min-height: 70px;
+            scroll-behavior: smooth;
+        }
+        
+        .scroll-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        
+        .scroll-container::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 3px;
+        }
+        
+        .scroll-container::-webkit-scrollbar-thumb {
+            background: linear-gradient(90deg, #00c8ff, #00ff88);
+            border-radius: 3px;
+        }
+        
+        .letter-chip {
+            min-width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #1a1a4a, #2a2a5a);
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #00c8ff;
+            flex-shrink: 0;
+            transition: all 0.3s;
+        }
+        
+        .letter-chip.current {
+            background: linear-gradient(135deg, #00c8ff, #00ff88);
+            color: #000;
+            box-shadow: 0 0 20px rgba(0, 200, 255, 0.6);
+            transform: scale(1.1);
+        }
+        
+        .sign-display {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(90deg, rgba(0, 150, 255, 0.8), rgba(0, 255, 200, 0.8));
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 10px rgba(0, 200, 255, 0.8);
+            box-shadow: 0 0 30px rgba(0, 200, 255, 0.5);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #444;
+        }
+        
+        .status-dot.active {
+            background: #00ff88;
+            box-shadow: 0 0 10px #00ff88;
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        #avatar-canvas {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white">
+    <div id="app" class="container mx-auto px-4 py-6 max-w-7xl">
+        
+        <!-- Header -->
+        <header class="text-center mb-6 fade-in">
+            <h1 class="text-3xl font-bold mb-2 bg-gradient-to-r from-cyan-400 via-blue-500 to-green-400 bg-clip-text text-transparent">
+                🤟 ESHARA - مترجم لغة الإشارة
+            </h1>
+            <p class="text-gray-400 text-sm">Real-time Arabic Sign Language Translation</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-5">
+            
+            <!-- Left: Robot Avatar -->
+            <div class="lg:col-span-3">
+                <div class="glass rounded-2xl p-1 fade-in">
+                    <div id="avatar-container" class="relative w-full h-[500px] bg-gradient-to-b from-blue-900/20 to-slate-900 rounded-2xl overflow-hidden">
+                        <div class="robot-glow"></div>
+                        
+                        <!-- Status Bar -->
+                        <div class="absolute top-4 left-4 right-4 flex justify-between items-center text-xs">
+                            <div class="flex items-center gap-2 px-3 py-1.5 bg-black/50 rounded-full">
+                                <div id="mic-status" class="status-dot"></div>
+                                <span>الميكروفون</span>
+                            </div>
+                            <div class="flex items-center gap-2 px-3 py-1.5 bg-black/50 rounded-full">
+                                <div class="status-dot active"></div>
+                                <span>الروبوت</span>
+                            </div>
+                        </div>
+                        
+                        <canvas id="avatar-canvas"></canvas>
+                        
+                        <div id="sign-display" class="sign-display" style="display: none;">
+                            -
+                        </div>
+                    </div>
+                    
+                    <!-- Animation Queue -->
+                    <div class="px-4 pb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm text-gray-400">قائمة الإشارات:</span>
+                            <span id="queue-count" class="text-sm text-cyan-400">0</span>
+                        </div>
+                        <div id="animation-queue" class="scroll-container bg-black/30 rounded-xl">
+                            <span class="text-gray-500 text-sm">اكتب أو تحدث لترجمة...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Controls -->
+            <div class="space-y-4">
+                
+                <!-- Speech Input -->
+                <div class="glass rounded-2xl p-4 fade-in">
+                    <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+                        <span>🎤</span> إدخال الكلام
+                    </h3>
+                    
+                    <div class="flex gap-2 mb-3">
+                        <button id="startSpeech" 
+                            class="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all">
+                            🎙️ ابدأ
+                        </button>
+                        <button id="stopSpeech" 
+                            class="flex-1 bg-gray-600 px-3 py-2.5 rounded-xl font-semibold text-sm transition-all" disabled>
+                            ⏹️
+                        </button>
+                    </div>
+                    
+                    <textarea id="speechInput" 
+                        class="w-full bg-slate-900/50 border border-slate-600 rounded-xl p-3 text-sm resize-none focus:border-cyan-500 focus:outline-none"
+                        rows="2" placeholder="النص سيظهر هنا..."></textarea>
+                </div>
+
+                <!-- Text Input -->
+                <div class="glass rounded-2xl p-4 fade-in">
+                    <h3 class="text-base font-semibold mb-3 flex items-center gap-2">
+                        <span>⌨️</span> إدخال النص
+                    </h3>
+                    
+                    <div class="flex gap-2">
+                        <input id="textInput" type="text" 
+                            class="flex-1 bg-slate-900/50 border border-slate-600 rounded-xl p-3 text-sm focus:border-cyan-500 focus:outline-none"
+                            placeholder="اكتب النص...">
+                        <button id="translateBtn" 
+                            class="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 px-4 rounded-xl font-semibold transition-all">
+                            ▶️
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Phrases -->
+                <div class="glass rounded-2xl p-4 fade-in">
+                    <h3 class="text-base font-semibold mb-3">📌 عبارات سريعة</h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button class="phrase-btn bg-slate-700/50 hover:bg-slate-600 px-2 py-2 rounded-lg text-xs transition-all" data-phrase="صباح الخير">صباح الخير</button>
+                        <button class="phrase-btn bg-slate-700/50 hover:bg-slate-600 px-2 py-2 rounded-lg text-xs transition-all" data-phrase="مساء الخير">مساء الخير</button>
+                        <button class="phrase-btn bg-slate-700/50 hover:bg-slate-600 px-2 py-2 rounded-lg text-xs transition-all" data-phrase="كيف حالك">كيف حالك</button>
+                        <button class="phrase-btn bg-slate-700/50 hover:bg-slate-600 px-2 py-2 rounded-lg text-xs transition-all" data-phrase="شكرا">شكرا</button>
+                        <button class="phrase-btn bg-slate-700/50 hover:bg-slate-600 px-2 py-2 rounded-lg text-xs transition-all" data-phrase="أهلاً">أهلاً</button>
+                        <button class="phrase-btn bg-slate-700/50 hover:bg-slate-600 px-2 py-2 rounded-lg text-xs transition-all" data-phrase="مع السلامة">السلامة</button>
+                        <button class="phrase-btn bg-slate-700/50 hover:bg-slate-600 px-2 py-2 rounded-lg text-xs transition-all" data-phrase="نعم">نعم</button>
+                        <button class="phrase-btn bg-slate-700/50 hover:bg-slate-600 px-2 py-2 rounded-lg text-xs transition-all" data-phrase="لا">لا</button>
+                    </div>
+                </div>
+
+                <!-- Settings -->
+                <div class="glass rounded-2xl p-4 fade-in">
+                    <h3 class="text-base font-semibold mb-3">⚙️ الإعدادات</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-xs text-gray-400">سرعة الإشارات:</label>
+                            <input type="range" id="speedRange" min="0.3" max="2" step="0.1" value="1" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-gray-400">تكرار:</span>
+                            <input type="checkbox" id="loopCheck" class="w-4 h-4 accent-cyan-500">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="glass rounded-2xl p-4 fade-in">
+                    <h3 class="text-base font-semibold mb-2">📚 قاعدة البيانات</h3>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-slate-800/50 rounded-lg p-2 text-center">
+                            <div class="text-cyan-400 font-bold text-lg">28</div>
+                            <div class="text-gray-500">حرف</div>
+                        </div>
+                        <div class="bg-slate-800/50 rounded-lg p-2 text-center">
+                            <div class="text-green-400 font-bold text-lg">20+</div>
+                            <div class="text-gray-500">جملة</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
+            <div class="glass rounded-xl p-4 text-center fade-in">
+                <div class="text-3xl mb-2">🎤</div>
+                <h4 class="font-semibold mb-1">Speech to Text</h4>
+                <p class="text-xs text-gray-400">تحويل الكلام لنص باستخدام الذكاء الاصطناعي</p>
+            </div>
+            <div class="glass rounded-xl p-4 text-center fade-in">
+                <div class="text-3xl mb-2">🤟</div>
+                <h4 class="font-semibold mb-1">Sign Language</h4>
+                <p class="text-xs text-gray-400">عرض لغة الإشارة بالرسوم المتحركة</p>
+            </div>
+            <div class="glass rounded-xl p-4 text-center fade-in">
+                <div class="text-3xl mb-2">🤖</div>
+                <h4 class="font-semibold mb-1">3D Avatar</h4>
+                <p class="text-xs text-gray-400">شخصية روبوت ثلاثية الأبعاد</p>
+            </div>
+        </div>
+
+        <footer class="text-center mt-8 py-6 text-gray-500 text-sm border-t border-slate-800">
+            <p>🤟 ESHARA - Arabic Sign Language Translator</p>
+            <p class="mt-1">Powered by AI & Three.js</p>
+        </footer>
+    </div>
+
+    <script>
+        // ==================== SIGN DICTIONARY ====================
+        const signDictionary = {
+            // Arabic Letters
+            'ا': { name: 'الألف', right: {x: 0.4, y: 0.1, z: 0, rx: 0, ry: 0, rz: 0.3} },
+            'ب': { name: 'الباء', right: {x: 0.3, y: 0, z: 0.15, rx: 0, ry: 0, rz: 1.2} },
+            'ت': { name: 'التاء', right: {x: 0.3, y: -0.05, z: 0.15, rx: 0, ry: 0, rz: 1.0} },
+            'ث': { name: 'الثاء', right: {x: 0.3, y: -0.02, z: 0.12, rx: 0, ry: 0, rz: 0.8} },
+            'ج': { name: 'الجيم', right: {x: 0.35, y: 0.05, z: 0.2, rx: 0, ry: 0.3, rz: 1.4} },
+            'ح': { name: 'الحاء', right: {x: 0.3, y: 0.1, z: 0.1, rx: 0, ry: 0, rz: 0.2} },
+            'خ': { name: 'الخاء', right: {x: 0.32, y: 0.02, z: 0.15, rx: 0, ry: 0, rz: 0.6} },
+            'د': { name: 'الدال', right: {x: 0.28, y: -0.15, z: 0.1, rx: 0, ry: 0, rz: 1.8} },
+            'ذ': { name: 'الذال', right: {x: 0.28, y: -0.12, z: 0.1, rx: 0, ry: 0, rz: 1.6} },
+            'ر': { name: 'الراء', right: {x: 0.28, y: -0.1, z: 0.1, rx: 0, ry: 0, rz: 2.0} },
+            'ز': { name: 'الزاي', right: {x: 0.28, y: -0.08, z: 0.12, rx: 0, ry: 0.2, rz: 1.8} },
+            'س': { name: 'السين', right: {x: 0.28, y: -0.05, z: 0.1, rx: 0, ry: 0, rz: 1.4} },
+            'ش': { name: 'الشين', right: {x: 0.28, y: -0.02, z: 0.1, rx: 0, ry: 0, rz: 1.2} },
+            'ص': { name: 'الصاد', right: {x: 0.35, y: 0.15, z: 0.1, rx: 0, ry: 0, rz: 0.1} },
+            'ض': { name: 'الضاد', right: {x: 0.32, y: 0.1, z: 0.12, rx: 0, ry: 0, rz: 0.3} },
+            'ط': { name: 'الطاء', right: {x: 0.3, y: 0.08, z: 0.1, rx: 0, ry: 0, rz: 0.1} },
+            'ظ': { name: 'الظاء', right: {x: 0.3, y: 0.1, z: 0.1, rx: 0, ry: 0, rz: 0.15} },
+            'ع': { name: 'العين', right: {x: 0.28, y: 0, z: 0.1, rx: 0, ry: 0, rz: 1.0} },
+            'غ': { name: 'الغين', right: {x: 0.32, y: 0, z: 0.14, rx: 0, ry: 0, rz: 0.8} },
+            'ف': { name: 'الفاء', right: {x: 0.3, y: -0.05, z: 0.12, rx: 0, ry: 0, rz: 0.7} },
+            'ق': { name: 'القاف', right: {x: 0.35, y: 0.08, z: 0.18, rx: 0, ry: 0.2, rz: 1.2} },
+            'ك': { name: 'الكاف', right: {x: 0.3, y: -0.02, z: 0.12, rx: 0, ry: 0, rz: 0.9} },
+            'ل': { name: 'اللام', right: {x: 0.35, y: 0.2, z: 0.1, rx: 0, ry: 0, rz: 0.3} },
+            'م': { name: 'الميم', right: {x: 0.28, y: -0.1, z: 0.1, rx: 0, ry: 0, rz: 0.2} },
+            'ن': { name: 'النون', right: {x: 0.28, y: -0.06, z: 0.1, rx: 0, ry: 0, rz: 0.5} },
+            'ه': { name: 'الهاء', right: {x: 0.28, y: -0.04, z: 0.1, rx: 0, ry: 0, rz: 0.6} },
+            'و': { name: 'الواو', right: {x: 0.25, y: -0.05, z: 0.2, rx: 0, ry: 0.4, rz: 0.4} },
+            'ي': { name: 'الياء', right: {x: 0.28, y: -0.02, z: 0.12, rx: 0, ry: 0, rz: 1.0} },
+            
+            // Common Phrases
+            'صباح الخير': { name: 'صباح الخير', right: {x: 0.4, y: 0.2, z: 0.15, rx: 0, ry: 0, rz: 0.3}, left: {x: -0.4, y: 0.2, z: 0.15, rx: 0, ry: 0, rz: -0.3} },
+            'مساء الخير': { name: 'مساء الخير', right: {x: 0.4, y: 0.2, z: 0.15, rx: 0, ry: 0, rz: 0.3}, left: {x: -0.4, y: 0.2, z: 0.15, rx: 0, ry: 0, rz: -0.3} },
+            'شكرا': { name: 'شكراً', right: {x: 0.35, y: 0.15, z: 0.2, rx: 0, ry: 0.2, rz: 1.2} },
+            'كيف حالك': { name: 'كيف حالك؟', right: {x: 0.3, y: -0.05, z: 0.12, rx: 0, ry: 0, rz: 0.8}, left: {x: -0.3, y: -0.05, z: 0.12, rx: 0, ry: 0, rz: -0.8} },
+            'أهلاً': { name: 'أهلاً', right: {x: 0.4, y: 0.15, z: 0.12, rx: 0, ry: 0, rz: 0.5} },
+            'مع السلامة': { name: 'مع السلامة', right: {x: 0.3, y: -0.05, z: 0.15, rx: 0, ry: 0.3, rz: 0.8} },
+            'السلامة': { name: 'السلامة', right: {x: 0.3, y: -0.05, z: 0.15, rx: 0, ry: 0.3, rz: 0.8} },
+            'نعم': { name: 'نعم', right: {x: 0.35, y: 0.2, z: 0.1, rx: 0, ry: 0, rz: 0.2} },
+            'لا': { name: 'لا', right: {x: 0.3, y: 0.1, z: 0.1, rx: 0, ry: 0, rz: 1.2} },
+        };
+
+        // ==================== THREE.JS ROBOT AVATAR ====================
+        let scene, camera, renderer, robot, head, leftArm, rightArm, leftHand, rightHand;
+        let isAnimating = false;
+        let animationQueue = [];
+        let animationSpeed = 1;
+        let loopSigns = false;
+        let currentLetter = '';
+
+        const metalMaterial = new THREE.MeshStandardMaterial({ color: 0x2a4a6a, roughness: 0.3, metalness: 0.8 });
+        const metalLight = new THREE.MeshStandardMaterial({ color: 0x4a6a8a, roughness: 0.3, metalness: 0.8 });
+        const metalDark = new THREE.MeshStandardMaterial({ color: 0x1a2a3a, roughness: 0.4, metalness: 0.9 });
+        const glowMaterial = new THREE.MeshStandardMaterial({ color: 0x00ccff, emissive: 0x00ccff, emissiveIntensity: 0.5, roughness: 0.2 });
+        const eyeGlowMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff88, emissive: 0x00ff88, emissiveIntensity: 1, roughness: 0.1 });
+
+        function initThreeJS() {
+            const canvas = document.getElementById('avatar-canvas');
+            const container = document.getElementById('avatar-container');
+            
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0.3, 4);
+            camera.lookAt(0, 0.2, 0);
+            
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setClearColor(0x000000, 0);
+            
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            
+            const mainLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            mainLight.position.set(2, 3, 3);
+            scene.add(mainLight);
+            
+            const fillLight = new THREE.DirectionalLight(0x4488ff, 0.4);
+            fillLight.position.set(-2, 1, -1);
+            scene.add(fillLight);
+            
+            createRobot();
+            window.addEventListener('resize', onWindowResize);
+            animate();
+        }
+
+        function createRobot() {
+            robot = new THREE.Group();
+            
+            // Base
+            const baseGeom = new THREE.CylinderGeometry(0.6, 0.7, 0.15, 32);
+            const base = new THREE.Mesh(baseGeom, metalDark);
+            base.position.y = -1.3;
+            robot.add(base);
+            
+            const baseRingGeom = new THREE.TorusGeometry(0.65, 0.03, 16, 32);
+            const baseRing = new THREE.Mesh(baseRingGeom, glowMaterial);
+            baseRing.position.y = -1.22;
+            baseRing.rotation.x = Math.PI / 2;
+            robot.add(baseRing);
+            
+            // Body
+            const bodyGeom = new THREE.BoxGeometry(0.7, 0.9, 0.4);
+            const body = new THREE.Mesh(bodyGeom, metalMaterial);
+            body.position.y = -0.65;
+            robot.add(body);
+            
+            // Chest
+            const chestPanelGeom = new THREE.BoxGeometry(0.4, 0.3, 0.05);
+            const chestPanel = new THREE.Mesh(chestPanelGeom, metalLight);
+            chestPanel.position.set(0, -0.55, 0.22);
+            robot.add(chestPanel);
+            
+            const chestGlow = new THREE.Mesh(new THREE.CircleGeometry(0.08, 16), eyeGlowMaterial);
+            chestGlow.position.set(0, -0.55, 0.25);
+            robot.add(chestGlow);
+            
+            // Neck
+            const neckGeom = new THREE.CylinderGeometry(0.12, 0.15, 0.15, 16);
+            const neck = new THREE.Mesh(neckGeom, metalDark);
+            neck.position.y = -0.1;
+            robot.add(neck);
+            
+            // Head
+            head = new THREE.Group();
+            
+            const headGeom = new THREE.BoxGeometry(0.45, 0.5, 0.35);
+            const headMesh = new THREE.Mesh(headGeom, metalMaterial);
+            head.add(headMesh);
+            
+            const headTopGeom = new THREE.BoxGeometry(0.4, 0.1, 0.3);
+            const headTop = new THREE.Mesh(headTopGeom, metalLight);
+            headTop.position.y = 0.3;
+            head.add(headTop);
+            
+            // Antenna
+            const antennaGeom = new THREE.CylinderGeometry(0.02, 0.03, 0.2, 8);
+            const antenna = new THREE.Mesh(antennaGeom, metalDark);
+            antenna.position.y = 0.45;
+            head.add(antenna);
+            
+            const antennaTip = new THREE.Mesh(new THREE.SphereGeometry(0.04, 16, 16), glowMaterial);
+            antennaTip.position.y = 0.58;
+            head.add(antennaTip);
+            
+            // Face screen
+            const faceScreen = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.3, 0.02), new THREE.MeshStandardMaterial({ color: 0x0a1520 }));
+            faceScreen.position.z = 0.17;
+            head.add(faceScreen);
+            
+            // Eyes
+            const eyeGeom = new THREE.SphereGeometry(0.06, 16, 16);
+            const leftEye = new THREE.Mesh(eyeGeom, eyeGlowMaterial);
+            leftEye.position.set(-0.1, 0.08, 0.18);
+            head.add(leftEye);
+            
+            const rightEye = new THREE.Mesh(eyeGeom, eyeGlowMaterial);
+            rightEye.position.set(0.1, 0.08, 0.18);
+            head.add(rightEye);
+            
+            // Mouth
+            const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.05, 0.02), eyeGlowMaterial);
+            mouth.position.set(0, -0.08, 0.18);
+            head.add(mouth);
+            
+            head.position.y = 0.35;
+            robot.add(head);
+            
+            // Shoulders
+            const shoulderGeom = new THREE.SphereGeometry(0.15, 16, 16);
+            const leftShoulder = new THREE.Mesh(shoulderGeom, metalDark);
+            leftShoulder.position.set(-0.45, -0.2, 0);
+            robot.add(leftShoulder);
+            
+            const rightShoulder = new THREE.Mesh(shoulderGeom, metalDark);
+            rightShoulder.position.set(0.45, -0.2, 0);
+            robot.add(rightShoulder);
+            
+            // Arms
+            const armGeom = new THREE.CylinderGeometry(0.08, 0.1, 0.5, 16);
+            const forearmGeom = new THREE.CylinderGeometry(0.06, 0.08, 0.45, 16);
+            
+            // Right arm
+            rightArm = new THREE.Group();
+            const rightUpperArm = new THREE.Mesh(armGeom, metalMaterial);
+            rightUpperArm.position.y = -0.3;
+            rightArm.add(rightUpperArm);
+            
+            const rightForearm = new THREE.Mesh(forearmGeom, metalLight);
+            rightForearm.position.y = -0.7;
+            rightArm.add(rightForearm);
+            
+            rightHand = new THREE.Group();
+            const handBaseGeom = new THREE.BoxGeometry(0.12, 0.08, 0.1);
+            const handBase = new THREE.Mesh(handBaseGeom, metalMaterial);
+            rightHand.add(handBase);
+            
+            for (let i = 0; i < 4; i++) {
+                const fingerGeom = new THREE.CylinderGeometry(0.015, 0.02, 0.1, 8);
+                const finger = new THREE.Mesh(fingerGeom, metalDark);
+                finger.position.set((i - 1.5) * 0.03, -0.08, 0);
+                rightHand.add(finger);
+            }
+            
+            const thumbGeom = new THREE.CylinderGeometry(0.02, 0.025, 0.08, 8);
+            const thumb = new THREE.Mesh(thumbGeom, metalDark);
+            thumb.position.set(0.08, -0.02, 0);
+            thumb.rotation.z = -0.5;
+            rightHand.add(thumb);
+            
+            rightHand.position.y = -0.98;
+            rightArm.add(rightHand);
+            rightArm.position.set(0.5, -0.1, 0);
+            robot.add(rightArm);
+            
+            // Left arm
+            leftArm = new THREE.Group();
+            const leftUpperArm = new THREE.Mesh(armGeom, metalMaterial);
+            leftUpperArm.position.y = -0.3;
+            leftArm.add(leftUpperArm);
+            
+            const leftForearm = new THREE.Mesh(forearmGeom, metalLight);
+            leftForearm.position.y = -0.7;
+            leftArm.add(leftForearm);
+            
+            leftHand = new THREE.Group();
+            const lHandBase = new THREE.Mesh(handBaseGeom, metalMaterial);
+            leftHand.add(lHandBase);
+            
+            for (let i = 0; i < 4; i++) {
+                const fingerGeom = new THREE.CylinderGeometry(0.015, 0.02, 0.1, 8);
+                const finger = new THREE.Mesh(fingerGeom, metalDark);
+                finger.position.set((i - 1.5) * 0.03, -0.08, 0);
+                leftHand.add(finger);
+            }
+            
+            const lThumb = new THREE.Mesh(thumbGeom, metalDark);
+            lThumb.position.set(0.08, -0.02, 0);
+            lThumb.rotation.z = -0.5;
+            leftHand.add(lThumb);
+            
+            leftHand.position.y = -0.98;
+            leftArm.add(leftHand);
+            leftArm.position.set(-0.5, -0.1, 0);
+            robot.add(leftArm);
+            
+            scene.add(robot);
+            resetArms();
+        }
+
+        function resetArms() {
+            rightArm.rotation.set(0, 0, 0.3);
+            rightArm.position.set(0.5, -0.1, 0);
+            rightHand.rotation.set(0, 0, 0);
+            leftArm.rotation.set(0, 0, -0.3);
+            leftArm.position.set(-0.5, -0.1, 0);
+            leftHand.rotation.set(0, 0, 0);
+        }
+
+        function onWindowResize() {
+            const container = document.getElementById('avatar-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            if (!isAnimating && robot) {
+                const time = Date.now() * 0.001;
+                robot.position.y = Math.sin(time * 0.5) * 0.02;
+                rightArm.rotation.z = 0.3 + Math.sin(time * 0.8) * 0.02;
+                leftArm.rotation.z = -0.3 + Math.sin(time * 0.8 + 0.5) * 0.02;
+                head.rotation.y = Math.sin(time * 0.3) * 0.05;
+                const glow = 0.8 + Math.sin(time * 2) * 0.2;
+                eyeGlowMaterial.emissiveIntensity = glow;
+            }
+            
+            renderer.render(scene, camera);
+        }
+
+        // ==================== ANIMATION SYSTEM ====================
+        let currentAnimationId = null;
+
+        function playSignAnimation(letter, duration = 1200) {
+            const sign = signDictionary[letter] || signDictionary['ا'];
+            const animDuration = duration / animationSpeed;
+            
+            isAnimating = true;
+            currentLetter = letter;
+            
+            document.getElementById('sign-display').style.display = 'block';
+            document.getElementById('sign-display').textContent = sign.name || letter;
+            updateQueueDisplay(letter);
+            
+            const startTime = Date.now();
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / animDuration, 1);
+                const eased = 1 - Math.pow(1 - progress, 3);
+                
+                if (sign.right) {
+                    rightArm.position.x = THREE.MathUtils.lerp(0.5, 0.5 + sign.right.x * 0.5, eased);
+                    rightArm.position.y = THREE.MathUtils.lerp(-0.1, -0.1 + sign.right.y, eased);
+                    rightArm.position.z = THREE.MathUtils.lerp(0, sign.right.z, eased);
+                    rightArm.rotation.z = THREE.MathUtils.lerp(0.3, 0.3 + sign.right.rz, eased);
+                    rightHand.rotation.z = THREE.MathUtils.lerp(0, sign.right.rx, eased);
+                }
+                
+                if (sign.left) {
+                    leftArm.position.x = THREE.MathUtils.lerp(-0.5, -0.5 + sign.left.x * 0.5, eased);
+                    leftArm.position.y = THREE.MathUtils.lerp(-0.1, -0.1 + sign.left.y, eased);
+                    leftArm.rotation.z = THREE.MathUtils.lerp(-0.3, -0.3 + sign.left.rz, eased);
+                }
+                
+                robot.position.y = THREE.MathUtils.lerp(0, Math.sin(progress * Math.PI) * 0.05, eased);
+                
+                if (progress < 1) {
+                    currentAnimationId = requestAnimationFrame(animate);
+                } else {
+                    setTimeout(() => returnToRest(), 300 / animationSpeed);
+                }
+            }
+            
+            animate();
+        }
+
+        function returnToRest() {
+            const startTime = Date.now();
+            const duration = 400 / animationSpeed;
+            
+            function animate() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                const eased = 1 - Math.pow(1 - progress, 2);
+                
+                rightArm.position.x = THREE.MathUtils.lerp(rightArm.position.x, 0.5, eased * 0.1);
+                rightArm.position.y = THREE.MathUtils.lerp(rightArm.position.y, -0.1, eased * 0.1);
+                rightArm.position.z = THREE.MathUtils.lerp(rightArm.position.z, 0, eased * 0.1);
+                rightArm.rotation.z = THREE.MathUtils.lerp(rightArm.rotation.z, 0.3, eased * 0.1);
+                leftArm.position.x = THREE.MathUtils.lerp(leftArm.position.x, -0.5, eased * 0.1);
+                leftArm.position.y = THREE.MathUtils.lerp(leftArm.position.y, -0.1, eased * 0.1);
+                leftArm.position.z = THREE.MathUtils.lerp(leftArm.position.z, 0, eased * 0.1);
+                leftArm.rotation.z = THREE.MathUtils.lerp(leftArm.rotation.z, -0.3, eased * 0.1);
+                robot.position.y = THREE.MathUtils.lerp(robot.position.y, 0, eased * 0.1);
+                
+                if (progress < 1) {
+                    requestAnimationFrame(animate);
+                } else {
+                    isAnimating = false;
+                    document.getElementById('sign-display').style.display = 'none';
+                    
+                    if (animationQueue.length > 0) {
+                        const next = animationQueue.shift();
+                        updateQueueCount();
+                        playSignAnimation(next.letter, next.duration);
+                    } else if (loopSigns && currentLetter) {
+                        playSignAnimation(currentLetter);
+                    }
+                }
+            }
+            
+            animate();
+        }
+
+        function updateQueueDisplay(current) {
+            const queue = document.getElementById('animation-queue');
+            if (animationQueue.length === 0 && !current) {
+                queue.innerHTML = '<span class="text-gray-500 text-sm">اكتب أو تحدث لترجمة...</span>';
+                return;
+            }
+            
+            let html = '';
+            if (current) {
+                html += `<div class="letter-chip current">${current}</div>`;
+            }
+            animationQueue.forEach(item => {
+                html += `<div class="letter-chip">${item.letter}</div>`;
+            });
+            queue.innerHTML = html;
+        }
+
+        function updateQueueCount() {
+            document.getElementById('queue-count').textContent = animationQueue.length;
+        }
+
+        function processTextToSigns(text) {
+            animationQueue = [];
+            const normalized = text.toLowerCase().trim();
+            
+            if (signDictionary[normalized]) {
+                playSignAnimation(normalized);
+                return;
+            }
+            
+            const words = normalized.split(' ');
+            
+            words.forEach((word, wordIndex) => {
+                if (signDictionary[word]) {
+                    animationQueue.push({ letter: word, duration: 1200 });
+                } else {
+                    const letters = word.replace(/[^\u0600-\u06FF]/g, '').split('');
+                    letters.forEach(letter => {
+                        if (signDictionary[letter]) {
+                            animationQueue.push({ letter: letter, duration: 700 });
+                        }
+                    });
+                }
+                
+                if (wordIndex < words.length - 1) {
+                    animationQueue.push({ letter: 'gap', duration: 200 });
+                }
+            });
+            
+            if (animationQueue.length > 0) {
+                const first = animationQueue.shift();
+                updateQueueCount();
+                playSignAnimation(first.letter, first.duration);
+            }
+        }
+
+        // ==================== SPEECH RECOGNITION ====================
+        let recognition = null;
+        const startSpeechBtn = document.getElementById('startSpeech');
+        const stopSpeechBtn = document.getElementById('stopSpeech');
+        const speechInput = document.getElementById('speechInput');
+        const micStatus = document.getElementById('mic-status');
+
+        function initSpeechRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                alert('المتصفح لا يدعم التعرف على الكلام');
+                return null;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognizer = new SpeechRecognition();
+            recognizer.lang = 'ar-SA';
+            recognizer.continuous = true;
+            recognizer.interimResults = true;
+
+            recognizer.onstart = () => {
+                startSpeechBtn.disabled = true;
+                stopSpeechBtn.disabled = false;
+                startSpeechBtn.classList.add('recording-pulse');
+                micStatus.classList.add('active');
+            };
+
+            recognizer.onresult = (event) => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                speechInput.value = transcript;
+                speechInput.value = transcript;
+                
+                if (transcript.trim()) {
+                    processTextToSigns(transcript);
+                }
+            };
+
+            recognizer.onend = () => {
+                startSpeechBtn.disabled = false;
+                stopSpeechBtn.disabled = true;
+                startSpeechBtn.classList.remove('recording-pulse');
+                micStatus.classList.remove('active');
+            };
+
+            return recognizer;
+        }
+
+        startSpeechBtn.addEventListener('click', () => {
+            if (!recognition) {
+                recognition = initSpeechRecognition();
+            }
+            if (recognition) {
+                try { recognition.start(); } catch(e) {}
+            }
+        });
+
+        stopSpeechBtn.addEventListener('click', () => {
+            if (recognition) recognition.stop();
+        });
+
+        // ==================== TEXT INPUT ====================
+        const textInput = document.getElementById('textInput');
+        const translateBtn = document.getElementById('translateBtn');
+
+        translateBtn.addEventListener('click', () => {
+            const text = textInput.value.trim();
+            if (text) {
+                speechInput.value = text;
+                processTextToSigns(text);
+            }
+        });
+
+        textInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                translateBtn.click();
+            }
+        });
+
+        // ==================== QUICK PHRASES ====================
+        document.querySelectorAll('.phrase-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const phrase = btn.dataset.phrase;
+                textInput.value = phrase;
+                speechInput.value = phrase;
+                processTextToSigns(phrase);
+            });
+        });
+
+        // ==================== SETTINGS ====================
+        document.getElementById('speedRange').addEventListener('input', (e) => {
+            animationSpeed = parseFloat(e.target.value);
+        });
+
+        document.getElementById('loopCheck').addEventListener('change', (e) => {
+            loopSigns = e.target.checked;
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', initThreeJS);
+    </script>
+</body>
+</html>

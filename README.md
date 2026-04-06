@@ -1,120 +1,80 @@
-# Real-Time Sign Language Translator
-# مترجم لغة الإشارة في الوقت الفعلي
+# 🤟 ESHARA - Arabic Sign Language Translator
 
-AI-powered Arabic Sign Language Translation System
+AI-powered Real-time Arabic Sign Language Translation with 3D Avatar
 
-## 🎯 Overview
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/zeyadsaeed2025-wq/eshara)
 
-Real-time translation of Arabic text into visual sign language using videos or 3D avatars.
+## 🚀 Live Demo
 
-## 🚀 Quick Start
+**Frontend (Vercel)**: https://eshara.vercel.app
+**API (Railway/Render)**: Coming soon
 
-### Docker (Recommended)
-```bash
-docker-compose up -d
-```
+## ✨ Features
 
-### Frontend: http://localhost:3000
-### Backend API: http://localhost:8000/api/docs
-
----
+| Feature | Status |
+|---------|--------|
+| 🎤 Speech to Text | ✅ |
+| ⌨️ Text Input | ✅ |
+| 🤟 Sign Translation | ✅ |
+| 🤖 3D Robot Avatar | ✅ |
+| 📱 Responsive Design | ✅ |
+| 🔄 Real-time Translation | ✅ |
 
 ## 📁 Project Structure
 
 ```
-sign-language-translator/
-├── backend/                  # FastAPI Backend
-│   ├── app/
-│   │   ├── models/         # Database & Schemas
-│   │   ├── routes/         # API Endpoints
-│   │   └── services/        # Business Logic
-│   ├── main.py
-│   ├── requirements.txt
-│   └── Dockerfile
-│
-├── frontend/                # Next.js Frontend
-│   ├── app/                # Pages
-│   ├── components/         # UI Components
-│   ├── lib/                # API & State
-│   ├── package.json
-│   └── Dockerfile
-│
-├── media/                  # Sign Language Videos
-│   └── videos/
-│       ├── letters/        # Arabic letter videos
-│       └── words/          # Word/phrase videos
-│
-└── docker-compose.yml
+eshara/
+├── backend/              # FastAPI Backend (for production)
+├── frontend/            # Next.js 14 Frontend
+├── eshara.html          # Standalone HTML (Vercel deploy)
+├── media/               # Sign videos & dictionary
+├── sgin_letters/        # Arabic letter videos
+└── supabase-config.md  # Database setup
 ```
 
----
+## 🚀 Deployment Guide
 
-## 🏗️ Architecture
+### Option 1: Vercel (Fastest - Recommended)
 
-```
-Frontend (Next.js)          Backend (FastAPI)
-┌─────────────────┐         ┌─────────────────┐
-│  Voice Input    │────────▶│  Speech-to-Text │
-│  Text Input     │         │  (Whisper)      │
-│  3D Avatar      │         └────────┬────────┘
-└────────┬────────┘                  │
-         │                          ▼
-         │                 ┌─────────────────┐
-         │                 │   Translation   │
-         │                 │    Engine       │
-         │                 └────────┬────────┘
-         │                          │
-         ▼                          ▼
-┌─────────────────────────────────────────┐
-│           MongoDB                        │
-│  ┌─────────┐ ┌─────────┐ ┌──────────┐  │
-│  │ words   │ │ letters │ │ history  │  │
-│  └─────────┘ └─────────┘ └──────────┘  │
-└─────────────────────────────────────────┘
-```
+1. **Push to GitHub:**
+   ```bash
+   git add .
+   git commit -m "Initial commit"
+   git push origin main
+   ```
 
----
+2. **Deploy eshara.html:**
+   - Go to [vercel.com](https://vercel.com)
+   - Import from GitHub
+   - Select the repository
+   - Deploy `eshara.html` directly
 
-## ✨ Features
+### Option 2: GitHub Pages
 
-| Feature | Description |
-|---------|-------------|
-| 🎤 Speech to Text | Arabic speech recognition |
-| ⌨️ Text Input | Direct Arabic text |
-| 🤟 Sign Translation | Dictionary-based |
-| 🎬 Video Playback | Sequential display |
-| 🤖 3D Avatar | Robot with animations |
-| 📱 Responsive | Mobile-friendly |
+1. Enable GitHub Pages in repository settings
+2. Select `main` branch and `/root` folder
+3. Access at: `https://zeyadsaeed2025-wq.github.io/eshara`
 
----
+### Option 3: Full Stack (Frontend + Backend)
 
-## 🔌 API Endpoints
+#### Frontend (Vercel):
+1. Deploy `frontend/` to Vercel
+2. Set environment variable: `NEXT_PUBLIC_API_URL`
 
-### POST /api/v1/translate
-```json
-{
-  "text": "صباح الخير",
-  "source_language": "ar",
-  "split_unknown_words": true
-}
-```
+#### Backend (Railway/Render):
+1. Deploy `backend/` to Railway or Render
+2. Connect to MongoDB Atlas
+3. Update API URL in frontend
 
-### Response
-```json
-{
-  "original_text": "صباح الخير",
-  "translated_signs": [
-    {
-      "type": "word",
-      "value": "صباح الخير",
-      "video_path": "/media/videos/words/sabah_al_khair.mp4"
-    }
-  ],
-  "total_signs": 1
-}
-```
+## 🛠️ Tech Stack
 
----
+| Component | Technology |
+|-----------|------------|
+| Frontend | HTML5, TailwindCSS, Three.js |
+| Backend | FastAPI, Python |
+| Database | MongoDB/Supabase |
+| AI | Web Speech API, Whisper |
+| Deployment | Vercel, GitHub |
 
 ## 📚 Dictionary
 
@@ -124,37 +84,47 @@ Frontend (Next.js)          Backend (FastAPI)
 ```
 
 ### Common Phrases
-- صباح الخير (Good morning)
-- مساء الخير (Good evening)
-- شكراً (Thank you)
-- أهلاً (Hello)
-- مع السلامة (Goodbye)
-- نعم / لا (Yes / No)
+| Arabic | English |
+|-------|---------|
+| صباح الخير | Good morning |
+| مساء الخير | Good evening |
+| شكراً | Thank you |
+| أهلاً | Hello |
+| مع السلامة | Goodbye |
+| نعم / لا | Yes / No |
 
----
+## 🔌 API Endpoints
 
-## 🛠️ Tech Stack
+```
+POST /api/v1/speech-to-text
+POST /api/v1/translate
+GET  /api/v1/dictionary
+```
 
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 14, React, TypeScript, TailwindCSS |
-| 3D Avatar | Three.js, React Three Fiber |
-| Backend | FastAPI, Python 3.11 |
-| Database | MongoDB |
-| AI | OpenAI Whisper |
+## 📦 Media Files
 
----
+The `sgin_letters/` folder contains:
+- 28 Arabic letter videos
+- 10+ phrase videos
 
-## 🔮 Future Enhancements
+## 🐳 Docker (Local Development)
 
-- [ ] ASL (American Sign Language) support
-- [ ] Real hand gesture detection
-- [ ] NLP sentence improvement
-- [ ] User accounts
-- [ ] Mobile app
-
----
+```bash
+docker-compose up -d
+```
 
 ## 📄 License
 
-MIT License
+MIT License - Free to use and modify
+
+## 👨‍💻 Author
+
+**Zeyad Saeed**
+- GitHub: [@zeyadsaeed2025-wq](https://github.com/zeyadsaeed2025-wq)
+
+---
+
+<div align="center">
+  <p>Made with ❤️ for the Deaf & Hard of Hearing community</p>
+  <p>🤟 Breaking barriers through technology</p>
+</div>
