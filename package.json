@@ -1,5 +1,9 @@
 {
-  "devDependencies": {
-    "vercel": "^50.40.0"
+  "name": "eshara",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build"
   }
 }
